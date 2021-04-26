@@ -1,0 +1,25 @@
+<nav search_view="search">
+  <view name="email"/>
+  <view name="tickets" />
+  
+  <a href="/app/itsi/itsi_event_management?emid=2c1a2c05-d346-11e9-8814-06347d23c774&amp;earliest=-7d%40h">ITSI - Open Incidents</a>
+  
+  <collection label="Managed Company Apps">
+  	<a href="/app/botn_lendur">LenDur - Mortgage Lending</a>
+    <a href="/app/botn_srvr">SRVR - Internet Service Provider</a>
+    <a href="/app/botn_zipdrive">ZipDrive - Scooter Sharing</a>
+    <a href="/app/botn_torvalds">Torvalds Health - Radiology Services</a>
+  </collection>
+  
+  <collection label="TMI Dashboards">
+  </collection>
+  
+  <view name="search"/>
+  
+  <collection label="Other">
+  	<view name="datasets" />
+  	<view name="reports" />
+  	<view name="alerts" />
+  	<view name="dashboards" />
+  </collection>
+</nav>

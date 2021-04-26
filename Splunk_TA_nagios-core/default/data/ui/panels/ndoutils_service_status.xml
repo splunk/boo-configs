@@ -1,0 +1,10 @@
+<panel>
+	<title>Nagios - Service Status</title>
+  	<table>
+    	<search>
+          <query>sourcetype=nagios:servicestatus earliest=-4m | dedup servicestatus_id | join type=inner instance_id [search sourcetype=nagios:instances | dedup instance_id] | eval service= name2 | lookup nagios_servicestatus_lookup current_state OUTPUT current_state_name AS status | eval last_check = case(len(last_check)==13,substr(last_check,0,10),len(last_check)==10,last_check) | eval next_check = case(len(next_check)==13,substr(next_check,0,10),len(next_check)==10,next_check)|fieldformat last_check=strftime(last_check,"%F %T") | fieldformat next_check=strftime(next_check,"%F %T") | table instance_name service status output perfdata last_check next_check</query>
+          <earliest></earliest>
+          <latest></latest>
+    	</search>
+  	</table>
+</panel>

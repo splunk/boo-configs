@@ -1,0 +1,35 @@
+<nav search_view="search">
+  <collection label="ZipDrive Dashboards">
+
+    <a href="/app/botn_zipdrive/user_activity">Citrix XD - User Activity</a>
+    <a href="/app/botn_zipdrive/user_session_detail">Citrix XD - User Activity Details</a>
+    <a href="/app/botn_zipdrive/user_logon_exp_wizard">Citrix XD - User Experience - Logon Performance</a>
+    <a href="/app/botn_zipdrive/user_logon_experience">Citrix XD - User Experience - Logon Performance Details</a>
+    <a href="/app/botn_zipdrive/user_session_exp_wizard">Citrix XD - User Experience - Session</a>
+
+    <a href="/app/botn_zipdrive/zip_drive__phantom">ZipDrive 🛴 | Phantom ITOps Automation</a>
+    <a href="/app/botn_zipdrive/zip_drive_dashboards_employee">ZipDrive 🛴 | Employee Activity</a>
+    <a href="/app/botn_zipdrive/zip_drive_ride_activity">ZipDrive 🛴 | Ride Activity</a>
+    <a href="/app/botn_zipdrive/zip_drive_dashboards_user_activity">ZipDrive 🛴 | User Activity</a>
+    <a href="/app/botn_zipdrive/zip_drive_billing">ZipDrive 🛴 | Billing Activity</a>
+
+  </collection>
+  
+  <a href="/app/botn_tmi">TMI - Home App</a>
+  
+  <collection label="Managed Company Apps">
+  	<a href="/app/botn_lendur">LenDur - Mortgage Lending</a>
+    <a href="/app/botn_srvr">SRVR - Internet Service Provider</a>
+    <a href="/app/botn_zipdrive">ZipDrive - Scooter Sharing</a>
+    <a href="/app/botn_torvalds">Torvalds Health - Radiology Services</a>
+  </collection>
+  
+  <view name="search"/>
+  
+  <collection label="Other">
+  	<view name="datasets" />
+  	<view name="reports" />
+  	<view name="alerts" />
+  	<view name="dashboards" />
+  </collection>
+</nav>

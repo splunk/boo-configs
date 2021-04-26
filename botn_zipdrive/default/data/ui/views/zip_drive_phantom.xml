@@ -1,0 +1,29 @@
+<dashboard script="konami.js">
+  <label>ZipDrive 🛴 - Phantom ITOps Automation</label>
+  <description>ZipDrive harnesses the full power of their existing IT investments with IT orchestration, automation and response. With Splunk Phantom, execute actions in seconds not hours.</description>
+  <row>
+    <panel>
+      <html>
+      <pre>
+      <div class="phantom">
+      ZipDrive Phantom Server: <a href="http://zipdrive-phantom.splunk.link" target="_blank">http://zipdrive-phantom.splunk.link/</a>
+      <b>User:</b> it_orchestration
+      <b>Pass:</b> theknightisyoung
+      </div>
+      <center>
+            <img src="https://www.splunk.com/content/dam/splunk2/images/screenshots/phantom/phantom-apps-apis-diagram.svg" width="50%"/>
+          </center>
+      </pre>
+      <style>
+        .phantom{
+          font-size:16px;
+          padding: 5px;
+          border-radius: 10px;
+          background: lightgray;
+          
+        }
+      </style>
+    </html>
+    </panel>
+  </row>
+</dashboard>

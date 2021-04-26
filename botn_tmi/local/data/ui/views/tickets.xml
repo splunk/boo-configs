@@ -1,0 +1,91 @@
+<form script="convert_token_to_html.js">
+  <label>Tickets</label>
+  <search id="ticketbase">
+    <query>host="ticket*" index="botn_meta" sourcetype="botn_meta"
+| rex "short_desc=\"(?&lt;short_desc&gt;.*)?\" desc="
+| eval body = mvindex(split(_raw, "HTMLCONTENT"),1)
+| streamstats count
+| eval "Number"=number
+| eval "Short Description"=short_desc
+| eval State=state
+| eval "Created"=created
+| table Number, Created, State, "Short Description", count, body</query>
+    <earliest>0</earliest>
+    <latest>now</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <title>Ace's Current Time</title>
+      <viz type="clock_viz.clock_viz">
+        <search>
+          <query>| makeresults count=1
+| eval _time=now()</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="clock_viz.clock_viz.captsize">0.3</option>
+        <option name="clock_viz.clock_viz.datefmt">MMMM D, YYYY</option>
+        <option name="clock_viz.clock_viz.datesize">.5</option>
+        <option name="clock_viz.clock_viz.font">bold</option>
+        <option name="clock_viz.clock_viz.format">h:mm A</option>
+        <option name="clock_viz.clock_viz.numerals">false</option>
+        <option name="clock_viz.clock_viz.seconds">smooth</option>
+        <option name="clock_viz.clock_viz.showdate">true</option>
+        <option name="clock_viz.clock_viz.size">100</option>
+        <option name="clock_viz.clock_viz.style">d</option>
+        <option name="clock_viz.clock_viz.timezone">GMT</option>
+        <option name="drilldown">none</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <search base="ticketbase">
+          <query>| table Number, Created, State, "Short Description", count</query>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="ticketidx">$row.count$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row depends="$boohoo$">
+    <panel>
+      <input type="text" token="ticketidx">
+        <label>field1</label>
+      </input>
+      <table>
+        <search base="ticketbase">
+          <query>| search count=$ticketidx$</query>
+          <done>
+            <set token="emailbody">$result.body$</set>
+          </done>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+        <div id="htmlPanelWithToken"/>
+    </html>
+    </panel>
+  </row>
+</form>

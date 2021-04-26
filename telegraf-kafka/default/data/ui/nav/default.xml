@@ -1,0 +1,169 @@
+<nav search_view="search" color="#778899">
+    <view name="overview" default="true"/>
+    <view name="overview_brokers"/>
+    <view name="overview_topics" />
+    <view name="telegraf-burrow" />
+    <!--
+    ####################################################################################################################
+    Analysis Workspace
+    ####################################################################################################################
+    -->
+
+    <view name="analysis_workspace" />
+
+    <!--
+    ####################################################################################################################
+    Splunk built-in
+    ####################################################################################################################
+    -->
+
+    <collection label="Search">
+        <view name="search" />
+        <view name="reports" />
+        <view name="dashboards" />
+        <view name="alerts" />
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    KAFKA
+    ####################################################################################################################
+    -->
+
+    <collection label="Kafka monitoring">
+
+        <collection label="Zookeeper servers">
+            <view name="telegraf-kafka-zookeeper" />
+        </collection>
+
+        <collection label="Kafka Brokers">
+            <view name="telegraf-kafka-kafka-brokers" />
+        </collection>
+
+        <collection label="Kafka Topics">
+            <view name="telegraf-kafka-kafka-topics" />
+        </collection>
+
+        <collection label="Kafka Connect">
+            <view name="telegraf-kafka-kafka-connect" />
+        </collection>
+
+        <collection label="Kafka Connect tasks">
+            <view name="telegraf-kafka-kafka-connect-source-task" />
+            <view name="telegraf-kafka-kafka-connect-sink-task" />
+            <saved name="Kafka monitoring - tasks status report" />
+        </collection>
+
+        <collection label="Confluent schema-registry">
+            <view name="telegraf-kafka-confluent-shema-registry" />
+        </collection>
+
+        <collection label="Confluent kafka-rest">
+            <view name="telegraf-kafka-confluent-kafka-rest" />
+        </collection>
+
+        <collection label="Confluent ksql-server">
+            <view name="telegraf-kafka-confluent-ksql-server" />
+        </collection>
+
+        <collection label="Kafka LinkedIn monitor">
+            <view name="telegraf-kafka-kafka-monitor" />
+        </collection>
+
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    KAFKA LOGS
+    ####################################################################################################################
+    -->
+
+    <collection label="Kafka logging">
+
+        <collection label="Zookeeper servers">
+            <a href="search?q=search%20eventtype%3Dzookeeper">eventtype=zookeeper</a>
+        </collection>
+
+        <collection label="Kafka Brokers">
+            <a href="search?q=search%20eventtype%3Dkafka_broker">eventtype=kafka_broker</a>
+        </collection>
+
+        <collection label="Kafka Connect">
+            <a href="search?q=search%20eventtype%3Dkafka_connect">eventtype=kafka_connect</a>
+            <a href="search?q=search%20eventtype%3Dkafka_connect_source">eventtype=kafka_connect_source</a>
+            <a href="search?q=search%20eventtype%3Dkafka_connect_sink">eventtype=kafka_connect_sink</a>
+        </collection>
+
+        <collection label="Confluent schema-registry">
+            <a href="search?q=search%20eventtype%3Dkafka_schema_registry">eventtype=kafka_schema_registry</a>
+        </collection>
+
+        <collection label="Confluent kafka-rest">
+            <a href="search?q=search%20eventtype%3Dkafka_rest">eventtype=kafka_rest</a>
+        </collection>
+
+        <collection label="Confluent ksql-server">
+            <a href="search?q=search%20eventtype%3Dkafka_ksql_server">eventtype=kafka_ksql_server</a>
+        </collection>
+
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    KAFKA ALERTING
+    ####################################################################################################################
+    -->
+
+    <collection label="Kafka alerting">
+        <a href="telegraf-kafka-alerting">Management of Kafka alerting</a>
+        <a href="../../alerts/telegraf-kafka">Triggered alerts for Kafka</a>
+        <a href="alerts">Alerts configuration</a>
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    VIEW OPTIMIZED FOR MOBILE VISUALIZATION
+    ####################################################################################################################
+    -->
+
+    <collection label="Connected Experience">
+        <a href="mobile_kafka_zookeeper">Kafka Zookeeper Health</a>
+        <a href="mobile_kafka_brokers">Kafka Brokers Health</a>
+        <a href="mobile_kafka_topics">Kafka Topics Health</a>
+        <a href="mobile_kafka_connect">Kafka Connect Health</a>
+        <a href="mobile_kafka_burrow">Kafka Burrow Health</a>
+        <view source="all" match="CloudGW" />
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    Audit
+    ####################################################################################################################
+    -->
+
+    <collection label="Audit">
+        <a href="audit_scheduling">Audit - Scheduling performance overview</a>
+        <a href="audit_volume">Audit - Volume indexing overview</a>
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    Configuration
+    ####################################################################################################################
+    -->
+
+    <collection label="Settings">
+        <a href="telegraf-kafka-configuration">Management of enabled components</a>
+        <a href="telegraf-kafka-alerting">Management of Kafka alerting</a>
+        <a href="telegraf-config-helper">Telegraf Configuration Generator</a>
+    </collection>
+
+    <!--
+    ####################################################################################################################
+    Run a search
+    ####################################################################################################################
+    -->
+
+    <a href="search">Run a search</a>
+
+</nav>

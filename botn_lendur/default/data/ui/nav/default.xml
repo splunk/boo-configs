@@ -1,0 +1,25 @@
+<nav search_view="search">
+  <collection label="LenDur Dashboards">
+    <view name="mortgage_infrastructure_dashboard"/>
+    <view name="mortgage_operations_dashboard"/>
+    <view name="contact_center_kpis"/>
+  </collection>
+  
+  <a href="/app/botn_tmi">TMI - Home App</a>
+  
+  <collection label="Managed Company Apps">
+  	<a href="/app/botn_lendur">LenDur - Mortgage Lending</a>
+    <a href="/app/botn_srvr">SRVR - Internet Service Provider</a>
+    <a href="/app/botn_zipdrive">ZipDrive - Scooter Sharing</a>
+    <a href="/app/botn_torvalds">Torvalds Health - Radiology Services</a>
+  </collection>
+  
+  <view name="search"/>
+  
+  <collection label="Other">
+  	<view name="datasets" />
+  	<view name="reports" />
+  	<view name="alerts" />
+  	<view name="dashboards" />
+  </collection>
+</nav>

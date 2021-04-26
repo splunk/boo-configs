@@ -1,0 +1,214 @@
+<form>
+  <label>Mortgage Operations Dashboard</label>
+  <search id="main">
+    <query>index=lendur_website sourcetype="mortgage:access" | stats count as Volume, sum(exe_time) as sumRT by _time, host, jvm</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="overall">
+    <query>index=lendur_website sourcetype="mortgage:access" | stats count by http_status, host, jvm</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <search id="stats">
+    <query>index=lendur_website sourcetype="mortgage:access" http://bcgmortgage.com/purchase/application/* | eval Total=if(request="POST http://bcgmortgage.com/purchase/application/ HTTP/1.0",1,0), Approved=if(match(request,"approved"),1,0), Declined=if(match(request,"declined"),1,0), request="Purchase" | stats sum(Total) as Total, sum(Approved) as Approved, sum(Declined) as Declined by request | append [search index=lendur_website sourcetype="mortgage:access" http://bcgmortgage.com/refinance/application/* | eval Total=if(request="POST http://bcgmortgage.com/refinance/application/ HTTP/1.0",1,0), Approved=if(match(request,"approved"),1,0), Declined=if(match(request,"declined"),1,0), request="Refinance" | stats sum(Total) as Total, sum(Approved) as Approved, sum(Declined) as Declined by request]</query>
+    <earliest>$time.earliest$</earliest>
+    <latest>$time.latest$</latest>
+  </search>
+  <fieldset submitButton="true" autoRun="false">
+    <input type="dropdown" token="split">
+      <label>Split By</label>
+      <choice value="by host">Host</choice>
+      <choice value="by jvm">JVM</choice>
+      <default>by host</default>
+    </input>
+    <input type="time" token="time">
+      <label>Timerange</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="span">
+      <label>Range Span</label>
+      <choice value="1min">1 Min</choice>
+      <choice value="5min">5 Min</choice>
+      <choice value="10min">10 Min</choice>
+      <choice value="15min">15 Min</choice>
+      <choice value="30min">30 Min</choice>
+      <choice value="1h">1 Hour</choice>
+      <default>15min</default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Web 01</title>
+      <single>
+        <title>Total 200</title>
+        <search base="overall">
+          <query>search host=web01 http_status="2*" | stats sum(count)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+      </single>
+      <single>
+        <title>Total 500</title>
+        <search base="overall">
+          <query>search host=web01 http_status="5*"| stats sum(count)</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Web 02</title>
+      <single>
+        <title>Total 200</title>
+        <search base="overall">
+          <query>search host=web02 http_status="2*" | stats sum(count)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+      </single>
+      <single>
+        <title>Total 500</title>
+        <search base="overall">
+          <query>search host=web02 http_status="5*"| stats sum(count)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Errors by JVM</title>
+      <single>
+        <search base="overall">
+          <query>search host=web01 http_status="5*"| stats sum(count) by jvm</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">127</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.size">medium</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Errors by JVM</title>
+      <single>
+        <search base="overall">
+          <query>search host=web02 http_status="5*"| stats sum(count) by jvm</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">104</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">1</option>
+        <option name="trellis.size">medium</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Volume</title>
+      <chart>
+        <search base="main">
+          <query>timechart span=$span$ sum(Volume) as Volume $split$</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+    <panel>
+      <title>Response Time</title>
+      <chart>
+        <search base="main">
+          <query>eval rspTime=sumRT/Volume | timechart span=$span$ avg(rspTime) as rspTime $split$</query>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Purchase</title>
+      <single>
+        <title>Total</title>
+        <search base="stats">
+          <query>search request="Purchase" | table Total</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Approved</title>
+        <search base="stats">
+          <query>search request="Purchase" | table Approved</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Declined</title>
+        <search base="stats">
+          <query>search request="Purchase" | table Declined</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Refinance</title>
+      <single>
+        <title>Total</title>
+        <search base="stats">
+          <query>search request="Refinance" | table Total</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Approved</title>
+        <search base="stats">
+          <query>search request="Refinance" | table Approved</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+      <single>
+        <title>Declined</title>
+        <search base="stats">
+          <query>search request="Refinance" | table Declined</query>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Response Time by Request</title>
+      <chart>
+        <search>
+          <query>index=lendur_website sourcetype="mortgage:access" | timechart span=$span$ avg(exe_time) as rspTime by request</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+        <option name="charting.axisTitleY.text">Seconds (ms)</option>
+        <option name="charting.axisY.maximumNumber">30000</option>
+        <option name="charting.axisY.minimumNumber">50</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+</form>

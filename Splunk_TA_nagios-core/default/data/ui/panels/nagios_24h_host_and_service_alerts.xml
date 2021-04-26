@@ -1,0 +1,15 @@
+<panel>
+  <title>Nagios - Host and Service Alerts in Last 24 Hours</title>
+    <table>
+    <search>
+      <query>sourcetype=nagios:core (eventname="SERVICE ALERT" NOT status_code="OK") OR (eventname="HOST ALERT" status_code="DOWN") | table _time host_name, service_name, severity, info</query>
+      <earliest>-24h@h</earliest>
+      <latest>now</latest>
+    </search>
+    <option name="wrap">false</option>
+    <option name="rowNumbers">true</option>
+    <option name="drilldown">row</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="count">20</option>
+  </table>
+</panel>

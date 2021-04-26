@@ -1,0 +1,7 @@
+[app/install/install_source_checksum]
+version = 7.3.1.1
+modtime = 1570571440.877480000
+
+[macros/telegraf_kafka_index]
+version = 7.3.1.1
+modtime = 1570572392.899683000

@@ -1,0 +1,100 @@
+[HOSTPERFDATA]	1421568600	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.105000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421568900	localhost	4.010	PING OK - Packet loss = 0%, RTA = 0.12 ms	rta=0.124000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421569200	localhost	4.010	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.112000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421569500	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.111000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421569800	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.12 ms	rta=0.115000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421570100	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.12 ms	rta=0.116000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421570400	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.12 ms	rta=0.115000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421570700	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.08 ms	rta=0.082000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421571000	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.107000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421571300	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.088000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421571600	localhost	4.005	PING OK - Packet loss = 0%, RTA = 0.08 ms	rta=0.077000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421571900	localhost	4.010	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.106000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421572200	localhost	4.005	PING OK - Packet loss = 0%, RTA = 0.08 ms	rta=0.077000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421572500	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.108000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421572800	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.105000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421573100	localhost	4.004	PING OK - Packet loss = 0%, RTA = 0.08 ms	rta=0.080000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421573400	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.08 ms	rta=0.084000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421573700	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.109000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421574000	localhost	4.004	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.096000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421574300	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.094000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421574600	localhost	4.004	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.086000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421574900	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.106000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421575200	localhost	4.010	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.097000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421575500	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.092000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421575800	localhost	4.019	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.107000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421576100	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.07 ms	rta=0.071000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421576398	localhost	4.003	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.096000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421576698	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.111000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421576998	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.07 ms	rta=0.072000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421577298	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.107000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421577598	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.102000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421577898	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.107000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421578198	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.092000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421578498	localhost	4.008	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.095000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421578798	localhost	4.012	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.101000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421579098	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.093000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421579398	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.105000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421579698	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.109000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421579998	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.105000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421580298	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.15 ms	rta=0.151000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421580598	localhost	4.010	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.111000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421580898	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.113000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421581198	localhost	4.006	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.105000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421581498	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.113000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421581798	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.12 ms	rta=0.116000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421582098	localhost	4.005	PING OK - Packet loss = 0%, RTA = 0.09 ms	rta=0.090000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421582398	localhost	4.011	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.112000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421582698	localhost	4.009	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.109000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421582998	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.11 ms	rta=0.109000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1421583298	localhost	4.007	PING OK - Packet loss = 0%, RTA = 0.10 ms	rta=0.098000ms;3000.000000;5000.000000;0.000000 pl=0%;80;100;0
+[HOSTPERFDATA]	1426118467	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.058ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118767	localhost	0.006	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.036ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119067	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.059ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119367	localhost	0.012	OK - 127.0.0.1: rta 0.015ms, lost 0%	rta=0.015ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.049ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119667	localhost	0.003	OK - 127.0.0.1: rta 0.028ms, lost 0%	rta=0.028ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.082ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119967	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120267	localhost	0.003	OK - 127.0.0.1: rta 0.034ms, lost 0%	rta=0.034ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.109ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120567	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118467	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.058ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118767	localhost	0.006	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.036ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119067	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.059ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119367	localhost	0.012	OK - 127.0.0.1: rta 0.015ms, lost 0%	rta=0.015ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.049ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119667	localhost	0.003	OK - 127.0.0.1: rta 0.028ms, lost 0%	rta=0.028ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.082ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119967	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120267	localhost	0.003	OK - 127.0.0.1: rta 0.034ms, lost 0%	rta=0.034ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.109ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120567	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118467	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.058ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118767	localhost	0.006	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.036ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119067	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.059ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119367	localhost	0.012	OK - 127.0.0.1: rta 0.015ms, lost 0%	rta=0.015ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.049ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119667	localhost	0.003	OK - 127.0.0.1: rta 0.028ms, lost 0%	rta=0.028ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.082ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119967	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120267	localhost	0.003	OK - 127.0.0.1: rta 0.034ms, lost 0%	rta=0.034ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.109ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120567	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118467	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.058ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118767	localhost	0.006	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.036ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119067	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.059ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119367	localhost	0.012	OK - 127.0.0.1: rta 0.015ms, lost 0%	rta=0.015ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.049ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119667	localhost	0.003	OK - 127.0.0.1: rta 0.028ms, lost 0%	rta=0.028ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.082ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119967	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120267	localhost	0.003	OK - 127.0.0.1: rta 0.034ms, lost 0%	rta=0.034ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.109ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120567	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118467	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.058ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426118767	localhost	0.006	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.036ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119067	localhost	0.003	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.059ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119367	localhost	0.012	OK - 127.0.0.1: rta 0.015ms, lost 0%	rta=0.015ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.049ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426119667	localhost	0.003	OK - 127.0.0.1: rta 0.028ms, lost 0%	rta=0.028ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.082ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426119967	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120267	localhost	0.003	OK - 127.0.0.1: rta 0.034ms, lost 0%	rta=0.034ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.109ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120567	localhost	0.009	OK - 127.0.0.1: rta 0.012ms, lost 0%	rta=0.012ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.032ms;;;; rtmin=0.006ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;
+[HOSTPERFDATA]	1426120867	localhost	0.007	OK - 127.0.0.1: rta 0.023ms, lost 0%	rta=0.023ms;3000.000;5000.000;0; pl=0%;80;100;; rtmax=0.057ms;;;; rtmin=0.013ms;;;;

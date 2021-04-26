@@ -1,0 +1,20 @@
+﻿RUNSTATUS,run_status_desc
+1,Cancel
+2,Delete
+3,Error
+4,Hold
+5,Queued
+6,Initiated
+7,Processing
+8,Cancelled
+9,Success
+10,Not Successful
+11,Posted
+12,Unable to Post
+13,Resend
+14,Posting
+15,Content Generated
+16,Pending
+17,Success With Warning
+18,Blocked
+19,Restart

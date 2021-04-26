@@ -1,0 +1,87 @@
+<form>
+  <label>Mortgage Infrastructure Dashboard</label>
+  <fieldset submitButton="false">
+    <input type="multiselect" token="host">
+      <label>Host</label>
+      <choice value="*">All</choice>
+      <choice value="web01">Web01</choice>
+      <choice value="web02">Web02</choice>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="split">
+      <label>Split By</label>
+      <choice value="">None</choice>
+      <choice value="by host">Host</choice>
+      <default></default>
+    </input>
+    <input type="time" token="time">
+      <label>Timerange</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>CPU Usage</title>
+      <chart>
+        <search>
+          <query>index=lendur_website sourcetype="mortgage:os" host=$host$ | timechart avg(cpu_usage) $split$</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisY.maximumNumber">100</option>
+        <option name="charting.axisY.minimumNumber">0</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Memory Usage</title>
+      <chart>
+        <search>
+          <query>index=lendur_website sourcetype="mortgage:os" host=$host$ | timechart avg(mem_usage) $split$</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Disk Usage</title>
+      <chart>
+        <search>
+          <query>index=lendur_website sourcetype="mortgage:os" host=$host$ | timechart avg(disk_usage) $split$</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">line</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>vCPU</title>
+      <chart>
+        <search>
+          <query>index=lendur_website sourcetype="mortgage:os" host=$host$ | timechart values(vcpu) $split$</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+</form>

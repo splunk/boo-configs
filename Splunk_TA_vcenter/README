@@ -1,0 +1,17 @@
+Splunk Add-on for vCenter
+----------------------------------------
+	Author: Splunk
+	Version: 3.4.5
+	Source type(s): vmware:vclog:cim-diag vmware:vclog:sms vmware:vclog:stats vmware:vclog:vim-tomcat-shared vmware:vclog:vpxd vmware:vclog:vpxd-alert vmware:vclog:vpxd-profiler vmware:vclog:vws vmware:vclog vmware:vclog:tomcat 
+	Input requirements: See vmware product installation documentation.
+	Has index-time operations: true, this TA must be placed on indexers
+
+Using this Add-on:
+----------------------------------------
+	Configuration: Manual
+	Ports for automatic configuration: None
+	Scripted input setup: Runs on first start of splunk.
+	
+	This Add-on processes data that has been assigned to the index "vmware-vclog". 
+    
+Copyright (C) 2005-2019 Splunk Inc. All Rights Reserved.

@@ -1,0 +1,67 @@
+<form script="convert_token_to_html.js">
+  <label>Tickets</label>
+  <search id="ticketbase">
+    <query>host="ticket*" index="botn_meta" sourcetype="botn_meta"
+| rex "short_desc=\"(?&lt;short_desc&gt;.*)?\" desc="
+| eval body = mvindex(split(_raw, "HTMLCONTENT"),1)
+| streamstats count
+| eval "Number"=number
+| eval "Short Description"=short_desc
+| eval State=state
+| eval "Created"=created
+| table Number, Created, State, "Short Description", count, body</query>
+    <earliest>0</earliest>
+    <latest></latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <table>
+        <search base="ticketbase">
+          <query>| table Number, Created, State, "Short Description", count</query>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="ticketidx">$row.count$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row depends="$boohoo$">
+    <panel>
+      <input type="text" token="ticketidx">
+        <label>field1</label>
+      </input>
+      <table>
+        <search base="ticketbase">
+          <query>| search count=$ticketidx$</query>
+          <done>
+            <set token="emailbody">$result.body$</set>
+          </done>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>$emailbody$</title>
+      <html>
+        <div id="htmlPanelWithToken"/>
+    </html>
+    </panel>
+  </row>
+</form>

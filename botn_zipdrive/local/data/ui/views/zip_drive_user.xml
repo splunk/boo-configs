@@ -1,0 +1,25 @@
+<dashboard>
+  <label>ZipDrive - Billing</label>
+  <description>GCP Cloud Billing detail</description>
+  <row>
+    <panel>
+      <title>Billing Information</title>
+      <table>
+        <search>
+          <query>index=gcp_billing 
+| timechart  span=1d  sum(credit_amount) by description 
+|  rename _time as Day</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>

@@ -1,0 +1,12 @@
+<form>
+  <label>vi - Userbase</label>
+  <description>Scooter User's detail</description>
+  <fieldset submitButton="false">
+    <input type="text" token="field1">
+      <label>field1</label>
+    </input>
+    <input type="text" token="field2">
+      <label>field2</label>
+    </input>
+  </fieldset>
+</form>

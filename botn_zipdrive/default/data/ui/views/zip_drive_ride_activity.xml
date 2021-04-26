@@ -1,0 +1,349 @@
+<form theme="dark" script="tripsui.js">
+  <label>ZipDrive 🛴 - Rides</label>
+  <description>Scooter Ride detail</description>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel>
+      <title>Most popular Scooter</title>
+      <input type="time" token="time_token_scooter" searchWhenChanged="true">
+        <label>Time</label>
+        <default>
+          <earliest>0</earliest>
+          <latest></latest>
+        </default>
+      </input>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" vehicle_type="scooter" mode=ride | stats count by branding | sort -count | head 1</query>
+          <earliest>$time_token_scooter.earliest$</earliest>
+          <latest>$time_token_scooter.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">globe</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Most popular Electric Bike</title>
+      <input type="time" token="time_token_electric">
+        <label>Time</label>
+        <default>
+          <earliest>0</earliest>
+          <latest></latest>
+        </default>
+      </input>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" vehicle_type="bike_electric" mode=ride | stats count by branding | sort -count | head 1</query>
+          <earliest>$time_token_electric.earliest$</earliest>
+          <latest>$time_token_electric.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">info-circle</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#f8be34</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Most popular Moped</title>
+      <input type="time" token="time_token_moped">
+        <label>Time</label>
+        <default>
+          <earliest>0</earliest>
+          <latest></latest>
+        </default>
+      </input>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" vehicle_type="moped" mode=ride | stats count by branding | sort -count | head 1</query>
+          <earliest>$time_token_moped.earliest$</earliest>
+          <latest>$time_token_moped.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">info-circle</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#f1813f</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Distinct $vehicle_type$ Rides Spanned by an Hour</title>
+      <input type="time" token="time_token_timechart">
+        <label>Time</label>
+        <default>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <input type="dropdown" token="vehicle_type">
+        <label>Vehicle Type</label>
+        <fieldForLabel>vehicle_type</fieldForLabel>
+        <fieldForValue>vehicle_type</fieldForValue>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" | dedup vehicle_type | table vehicle_type</query>
+        </search>
+      </input>
+      <chart>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" vehicle_type=$vehicle_type|s$ mode = ride | timechart span=1h dc(user_id)</query>
+          <earliest>$time_token_timechart.earliest$</earliest>
+          <latest>$time_token_timechart.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text">Distinct Rides</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Rider Destination and Instructions</title>
+      <input type="dropdown" token="riders" searchWhenChanged="true">
+        <label>Riders</label>
+        <fieldForLabel>names</fieldForLabel>
+        <fieldForValue>user_id</fieldForValue>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" mode=ride 
+| rename destination.city as dcity, source.city as scity
+| where dcity=scity
+| dedup user_id 
+| lookup scooter_users.csv user_id OUTPUTNEW first_name, last_name 
+| eval names=first_name." ".last_name 
+| table names, user_id</query>
+        </search>
+      </input>
+      <single>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" user_id=$riders$  mode=ride | stats values(route.leg{}.maneuver{}.instruction) as "Route", values(destination.location) as "Destination" by user_id | where NOT isnull(Route) | lookup scooter_users.csv user_id OUTPUTNEW first_name, last_name | rename first_name as "First Name", last_name as "Last Name" | fields - user_id | table "Destination", "Route"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Ride Route</title>
+      <viz type="location_tracker_app.location_tracker">
+        <search>
+          <query>index="zipdrive_gcp*"  source="gcp:scooter_rides" mode=ride user_id=$riders$ 
+| fields user_id *latitude* *longitude* battery_level battery_percent branding mile minute rating
+| head 1
+| rename route.leg{}.maneuver{}.position.latitude as multi_latitude, route.leg{}.maneuver{}.position.longitude as multi_longitude
+| eval multi_location=mvzip(multi_latitude, multi_longitude, " ") | mvexpand multi_location
+| eval multi_location_array=split(multi_location," ") | eval latitude=mvindex(multi_location_array,0), longitude=mvindex(multi_location_array,1)
+| where latitude != "" and longitude != ""
+| eval description = "&lt;b&gt;User: ".user_id."&lt;/b&gt;&lt;br&gt;&lt;b&gt;Battery(%): ".battery_percent."&lt;/b&gt;"."&lt;br&gt;&lt;b&gt;Brand: ".branding."&lt;/b&gt;"."&lt;br&gt;&lt;b&gt;Mile: ".mile."&lt;/b&gt;"."&lt;br&gt;&lt;b&gt;Approx. Duration: ".minute."&lt;/b&gt;&lt;br&gt;"."&lt;b&gt;Rating: ".rating."&lt;/b&gt;"
+| table user_id latitude longitude description</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="location_tracker_app.location_tracker.interval">10</option>
+        <option name="location_tracker_app.location_tracker.showTraces">1</option>
+        <option name="location_tracker_app.location_tracker.staticIcon">motorcycle</option>
+        <option name="location_tracker_app.location_tracker.tileSet">dark_tiles</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$usused_token$">
+      <single>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides" user_id=$riders$ | stats values(route.leg{}.maneuver{}.instruction) as "Route", values(destination.location) as "Destination" by user_id | where NOT isnull(Route) | lookup scooter_users.csv user_id OUTPUTNEW first_name, last_name | rename first_name as "First Name", last_name as "Last Name" | fields - user_id | table "Route" | mvexpand "Route"  | reverse | mvcombine delim="\n" "Route"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+          <done>
+            <set token="route">$result.Route$</set>
+          </done>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row depends="$riders$">
+    <panel>
+      <html>
+        <div id="leet_31337">
+        <span id="showme">
+          <pre>$route$</pre>
+        </span>
+        </div>
+        <style>
+          
+          .locationtracker-popup-pane{
+            color: orange !important;
+          }
+          
+          #leet_31337 {
+            background: #31373e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 8px #f8be34;
+            color: #eee;
+            text-align: center;
+            font-size: 16px;
+            font-family: Courier New;
+          }
+          
+          .street {
+              color: #d402d4;
+          }
+          
+          .direction {
+              color: #5cc05c;
+          }
+          
+          .next-street {
+              color: #f8be34;
+          }
+
+          
+          .distance-description{
+            background-color: #00a4fd47;
+            color: #00a4fd;
+            border-radius: 5px;
+            padding: 2px;
+          }
+          
+          .length{
+            color: orange;
+          }
+          
+
+        </style>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Popular Parking Station based on Historical Scooter Rides</title>
+      <chart>
+        <search>
+          <query>index=zipdrive_gcp source="gcp:scooter_rides"  source.country=" USA" OR source.country=" United States of America" 
+| rename source.latitude as latitude, source.longitude as longitude, source.city as city
+| lookup scooter_parking_station.csv latitude AS latitude longitude AS longitude OUTPUTNEW id as parking_station_id 
+| table parking_station_id city
+| rex field=parking_station_id "(?&lt;parking_station_id&gt;[^a-z]+)"
+| stats count by city, parking_station_id | sort - count
+| head 10</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.text">Parking Station</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.overlayFields">parking_station_id</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+</form>

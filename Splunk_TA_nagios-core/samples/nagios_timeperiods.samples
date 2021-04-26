@@ -1,0 +1,8 @@
+2015-02-16 15:47:23 timeperiod_id=55, instance_id=1, config_type=1, timeperiod_object_id=125, alias="24x7"
+2015-02-16 15:47:23 timeperiod_id=56, instance_id=1, config_type=1, timeperiod_object_id=126, alias="None"
+2015-02-16 15:47:23 timeperiod_id=54, instance_id=1, config_type=1, timeperiod_object_id=124, alias="Normal Work Hours"
+2015-02-16 15:47:23 timeperiod_id=52, instance_id=1, config_type=1, timeperiod_object_id=122, alias="No Time Is A Good Time"
+2015-02-16 15:47:23 timeperiod_id=53, instance_id=1, config_type=1, timeperiod_object_id=123, alias="U.S. Holidays"
+2015-02-16 15:47:23 timeperiod_id=50, instance_id=1, config_type=1, timeperiod_object_id=120, alias="24x7 Sans Holidays"
+2015-02-16 15:47:23 timeperiod_id=51, instance_id=1, config_type=1, timeperiod_object_id=121, alias="Notification Times for nagiosadmin"
+2015-02-16 15:47:23 timeperiod_id=49, instance_id=1, config_type=1, timeperiod_object_id=119, alias="24 Hours A Day, 7 Days A Week"

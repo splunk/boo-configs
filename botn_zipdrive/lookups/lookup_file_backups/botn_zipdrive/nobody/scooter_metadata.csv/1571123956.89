@@ -1,0 +1,4 @@
+scooter_type,unlock_charge,charge_per_minute,charge_per_mile,cost_price
+scooter,1,0.50,0.01,250
+bike_electric,5,2.50,0.05,1250
+moped,10,5.00,0.25,2500

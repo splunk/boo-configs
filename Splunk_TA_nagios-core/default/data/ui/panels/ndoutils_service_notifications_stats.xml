@@ -1,0 +1,11 @@
+<panel>
+  <title>Nagios - Service Notifications</title>
+    <chart>
+    <search>
+          <query>sourcetype=nagios:notifications  notification_type = 1 earliest=-2m | dedup notification_id  | lookup nagios_notifications_lookup notification_type state OUTPUT state_name | eval state=state_name | stats count by state</query>
+          <earliest />
+          <latest />
+    </search>
+    <option name="charting.chart">pie</option>
+  </chart>
+</panel>

@@ -1,0 +1,30 @@
+<form theme="dark">
+  <label>Patient Information Dashboard</label>
+  <fieldset submitButton="true">
+    <input type="text" token="datetok" searchWhenChanged="true">
+      <label>Exam Date (YYYY-MM-DD)</label>
+      <default>2019-01-01</default>
+      <initialValue>2019-01-01</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Patient Contact List</title>
+      <table>
+        <search>
+          <query>index=torvalds_pacs |rex field=exam_date "(?&lt;exam_day&gt;\d{4}-\d{2}-\d{2})"|search exam_day="$datetok$"|table mrn pat_name dob home_phone_num</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

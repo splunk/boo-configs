@@ -1,0 +1,5 @@
+fields,eventtype,host,index,linecount,punct,source,sourcetype,splunk_server,splunk_server_group,tag,tag::eventtype,zip.drive.status.message,_raw
+,,yoda-speaks.splunk.link,gcp,1,"{"""":_{"""":_{"""":_{"""":_""_:___.""}}}}",gcp:status,httpevent,-,,up,,ZipDrive Status: Up and Running.,"{""zip"": {""drive"": {""status"": {""message"": ""ZipDrive Status: Up and Running.""}}}}"
+,,yoda-speaks.splunk.link,gcp,1,"{"""":_{"""":_{"""":_{"""":_""_:___.""}}}}",gcp:status,httpevent,-,,up,,ZipDrive Status: Up and Running.,"{""zip"": {""drive"": {""status"": {""message"": ""ZipDrive Status: Up and Running.""}}}}"
+,,yoda-speaks.splunk.link,gcp,1,"{"""":_{"""":_{"""":_{"""":_""_:___.""}}}}",gcp:status,httpevent,-,,up,,ZipDrive Status: Up and Running.,"{""zip"": {""drive"": {""status"": {""message"": ""ZipDrive Status: Up and Running.""}}}}"
+,,yoda-speaks.splunk.link,gcp,1,"{"""":_{"""":_{"""":_{"""":_""_:____""}}}}",gcp:status,httpevent,v3idx.botn.me,,break,,ZipDrive Status: backend services are down,"{""zip"": {""drive"": {""status"": {""message"": ""ZipDrive Status: backend services are down""}}}}"

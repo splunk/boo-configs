@@ -1,0 +1,60 @@
+<dashboard script="convert_token_to_html.js">
+  <label>Email</label>
+  <search id="emailbase">
+    <query>host="email*" index="botn_meta"
+| eval body = mvindex(split(_raw, "HTMLCONTENT"),1)
+| streamstats count
+| eval "Date Received"=date
+| eval From=from
+| eval Subject=subject
+| table "Date Received", From, Subject, count, body</query>
+    <earliest>0</earliest>
+    <latest></latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <row>
+    <panel>
+      <table>
+        <search base="emailbase">
+          <query>| table "Date Received", From, Subject, count</query>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="emailidx">$row.count$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row depends="$boohoo$">
+    <panel>
+      <table>
+        <search base="emailbase">
+          <query>| search count=$emailidx$</query>
+          <done>
+            <set token="emailbody">$result.body$</set>
+          </done>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <html>
+        <div id="htmlPanelWithToken"/>
+    </html>
+    </panel>
+  </row>
+</dashboard>

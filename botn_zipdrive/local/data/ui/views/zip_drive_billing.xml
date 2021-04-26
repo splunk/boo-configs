@@ -1,0 +1,21 @@
+<dashboard theme="dark">
+  <label>ZipDrive 🛴 - Billing</label>
+  <description>GCP Cloud Billing detail</description>
+  <row>
+    <panel>
+      <title>Billing Information</title>
+      <chart>
+        <search>
+          <query>index=zipdrive_gcp_billing
+| timechart  span=1d  sum(credit_amount) by description</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.drilldown">all</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+</dashboard>

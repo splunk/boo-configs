@@ -1,0 +1,14 @@
+<panel>
+  <title>Nagios - Total Service Alerts and Notifications in Last 24 Hours</title>
+    <chart>
+    <search>
+      <query>sourcetype=nagios:core eventname="SERVICE NOTIFICATION" OR eventname="SERVICE ALERT" | timechart count by status_code</query>
+      <earliest>-24h@h</earliest>
+      <latest>now</latest>
+    </search>
+    <option name="drilldown">cell</option>
+    <option name="charting.axisY2.enabled">undefined</option>
+    <option name="charting.chart">column</option>
+    <option name="charting.chart.stackMode">stacked</option>
+  </chart>
+</panel>

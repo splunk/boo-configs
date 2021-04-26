@@ -1,0 +1,2145 @@
+<dashboard stylesheet="common.css,boottsrap-btn.css,table.css" script="load_spinner.js,load_components.js,configcheck.js,token_buttons.js,table.js" hideEdit="True" isVisible="True">
+    <label>Overview</label>
+
+    <search id="main_populate">
+        <query>| inputlookup kafka_infra_inventory | search `overview_page_filters`
+| stats count by env, label | fields env, label</query>
+    </search>
+
+    <search base="main_populate" id="detect_multienv">
+        <query>search $env$ $label$ | stats dc(env) as count | where count=1</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="monoenv_detected"></unset>
+            </condition>
+            <condition>
+                <set token="monoenv_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <fieldset submitButton="false">
+    </fieldset>
+
+    <!-- Retrieve all metrics available for all components -->
+    <search id="all_kafka_components_mcatalog">
+        <query>| mcatalog values(server) as server values(jolokia_agent_url) as jolokia_agent_url where `telegraf_kafka_index` metric_name=* $env$ $label$ by metric_name</query>
+        <earliest>-5m</earliest>
+        <latest>now</latest>
+    </search>
+
+    <!-- Detect Zookeeper nodes -->
+    <search id="detect_zookeeper" base="all_kafka_components_mcatalog">
+        <query>where metric_name="zookeeper.avg_latency" OR metric_name="zookeeper.open_file_descriptor_count"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="zookeeper_detected"></unset>
+            </condition>
+            <condition>
+                <set token="zookeeper_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Kafka brokers -->
+    <search id="detect_kafka_broker" base="all_kafka_components_mcatalog">
+        <query>where metric_name="kafka_controller.ActiveControllerCount.Value"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="kafka_broker_detected"></unset>
+            </condition>
+            <condition>
+                <set token="kafka_broker_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Kafka Connect -->
+    <search id="detect_kafka_connect" base="all_kafka_components_mcatalog">
+        <query>where metric_name="kafka_connect.worker.connector-count"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="kafka_connect_detected"></unset>
+            </condition>
+            <condition>
+                <set token="kafka_connect_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Confluent schema-registry -->
+    <search id="detect_confluent_schema_registry" base="all_kafka_components_mcatalog">
+        <query>where metric_name="kafka_schema-registry.master-slave-role.master-slave-role"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="schema_registry_detected"></unset>
+            </condition>
+            <condition>
+                <set token="schema_registry_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Confluent ksql-server -->
+    <search id="detect_confluent_ksql_server" base="all_kafka_components_mcatalog">
+        <query>where match(metric_name, "kafka_ksql-server.*(messages-consumed-per-sec|messages-produced-per-sec)")</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="ksql_server_detected"></unset>
+            </condition>
+            <condition>
+                <set token="ksql_server_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Confluent kafka-rest -->
+    <search id="detect_confluent_kafka_rest" base="all_kafka_components_mcatalog">
+        <query>where metric_name="kafka_kafka-rest.jetty-metrics.connections-active"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="kafka_rest_detected"></unset>
+            </condition>
+            <condition>
+                <set token="kafka_rest_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- Detect Burrow -->
+    <search id="detect_burrow" base="all_kafka_components_mcatalog">
+        <query>where metric_name="burrow_group.status_code"</query>
+        <progress>
+            <condition match="$job.resultCount$ == 0">
+                <unset token="burrow_detected"></unset>
+            </condition>
+            <condition>
+                <set token="burrow_detected">true</set>
+            </condition>
+        </progress>
+    </search>
+
+    <!-- base search for Zookeeper -->
+
+    <search id="server_activity_summary" depends="$zookeeper_detected$">
+        <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="zookeeper.avg_latency" OR metric_name="zookeeper.outstanding_requests" OR metric_name="zookeeper.pending_syncs" $env$ $label$ by metric_name span=1s
+            | eval {metric_name}=value
+            | stats first(zookeeper.*) as "*" by _time
+            | stats avg(*) as "*"
+            | eval pending_syncs=if(isnull(pending_syncs), 0, pending_syncs)</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Kafka brokers -->
+
+    <search id="broker_activity_summary" depends="$kafka_broker_detected$">
+        <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="kafka_topics.MessagesInPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesInPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesOutPerSec.OneMinuteRate" $env$ $label$ by metric_name
+            | eval {metric_name}=value
+            | stats first(kafka_topics.*.OneMinuteRate) as "*"
+            | eval KBytesInPerSec=round(BytesInPerSec/1024, 2), KBytesOutPerSec=round(BytesOutPerSec/1024, 2), MessagesInPerSec=round(MessagesInPerSec, 2)
+            | fields KBytesInPerSec, KBytesOutPerSec, MessagesInPerSec</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Kafka Connect -->
+
+    <search id="connect_state_summary" depends="$kafka_connect_detected$">
+        <query>| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.worker.task-startup-failure-total" OR metric_name="kafka_connect.worker.connector-startup-failure-total" OR metric_name="kafka_connect.worker.time-since-last-rebalance-ms" OR metric_name="kafka_connect.worker.task-count" $env$ $label$ by metric_name, env, label, jolokia_agent_url
+            | eval {metric_name}=value
+            | stats first(kafka_connect.*) as "*" by env, label, jolokia_agent_url
+            | stats min(worker.time-since-last-rebalance-ms) as worker.time-since-last-rebalance-ms, sum(*) as "*"
+            | eval duration=tostring(round('worker.time-since-last-rebalance-ms'/1000, 0), "duration")
+            | fields worker.connector-startup-failure-total, worker.task-startup-failure-total, worker.task-count, duration</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <search id="connect_tasks_summary" depends="$kafka_connect_detected$">
+        <query>| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" OR metric_name="kafka_connect.connector-task.running-ratio" OR metric_name="kafka_connect.error-task.total-errors-logged" OR metric_name="kafka_connect.error-task.total-retries" connector="*" $env$ $label$ by metric_name, env, label, task, connector
+            | eval {metric_name}=value
+            | stats min(kafka_connect.connector-task.status) as connector-task.status, first(kafka_connect.*) as "*" by env, label, connector
+            | eval connector-task.running-ratio=round('connector-task.running-ratio'*100, 2) | fields env, label, connector connector-task.status | rename connector-task.status as integer_status
+            | eval status=case(integer_status=0, "paused", integer_status=1, "running", integer_status=2, "unassigned", integer_status=3, "failed", integer_status=4, "destroyed")
+            | join env, label, connector [ | inputlookup kafka_connect_tasks_monitoring ] | where monitoring_state="enabled"</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Confluent schema registry -->
+
+    <search id="schema_registry_summary" depends="$schema_registry_detected$">
+        <query>| mstats avg(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_schema-registry.jetty-metrics.connections-active" OR  metric_name="kafka_schema-registry.jetty-metrics.connections-opened-rate" OR metric_name="kafka_schema-registry.jetty-metrics.connections-closed-rate" $env$ $label$ by metric_name
+            | eval {metric_name}=value
+            | stats first(kafka_schema-registry.*) as "*"</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <search id="schema_registry_summary_jersey" depends="$schema_registry_detected$">
+        <query>| mstats avg(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_schema-registry.jersey-metrics.request-error-rate" $env$ $label$ by metric_name
+            | eval {metric_name}=value
+            | stats first(kafka_schema-registry.*) as "*"</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Confluence ksql-server -->
+
+    <search id="ksql_server_queries_activity_summary" depends="$ksql_server_detected$">
+        <query>| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_ksql-server.*num-persistent-queries" OR metric_name="kafka_ksql-server.*num-active-queries" OR metric_name="kafka_ksql-server.*num-idle-queries" $env$ $label$ by metric_name
+            | rex field=metric_name "(?&lt;metric_name&gt;num-persistent-queries|num-active-queries|num-idle-queries)"
+            | eval {metric_name}=value
+            | stats first(*) as "*"
+            | fields num-active-queries, num-persistent-queries, num-idle-queries</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <search id="ksql_server_stats_activity_summary" depends="$ksql_server_detected$">
+        <query>| mstats avg(_value) as value WHERE `telegraf_kafka_index` metric_name=kafka_ksql-server.*messages-consumed-per-sec OR metric_name=kafka_ksql-server.*messages-produced-per-sec OR metric_name="kafka_ksql-server.*error-rate" $env$ $label$ by metric_name
+            | rex field=metric_name "(?&lt;metric_name&gt;messages-consumed-per-sec|messages-produced-per-sec|error-rate)"
+            | eval {metric_name}=value
+            | stats first(*) as "*"
+            | eval messages-consumed-per-sec=round('messages-consumed-per-sec', 2), messages-produced-per-sec=round('messages-produced-per-sec', 2)
+            | fields messages-produced-per-sec, messages-consumed-per-sec, error-rate</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>30s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Confluent kafka-rest -->
+
+    <search id="kafka_rest_summary" depends="$kafka_rest_detected$">
+        <query>| mstats avg(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_kafka-rest.jetty-metrics.connections-active" OR  metric_name="kafka_kafka-rest.jetty-metrics.connections-opened-rate" OR metric_name="kafka_kafka-rest.jetty-metrics.connections-closed-rate" $env$ $label$ by metric_name
+            | eval {metric_name}=value
+            | stats first(kafka_kafka-rest.*) as "*"</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <search id="kafka_rest_summary_jersey" depends="$kafka_rest_detected$">
+        <query>| mstats avg(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_kafka-rest.jersey-metrics.request-error-rate" $env$ $label$ by metric_name
+            | eval {metric_name}=value
+            | stats first(kafka_kafka-rest.*) as "*"</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!-- base search for Burrow -->
+
+    <search id="burrow" depends="$burrow_detected$">
+        <query>| mstats latest(_value) as value where metric_name="burrow_group.lag" OR metric_name="burrow_group.status_code" `telegraf_kafka_index` group!="" $env$ $label$ by env, label, cluster, group, metric_name span=10s
+| eval {metric_name}=value
+| stats first(burrow_group.*) as "*" by _time, env, label, cluster, group
+| stats max(_time) as lastTime, avg(lag) as avg_lag, max(lag) as max_lag, latest(lag) as current, latest(status_code) as status_code by env, label, cluster, group
+| lookup burrow_status status_code OUTPUT status, description
+| rangemap field=status_code low=1-1 elevated=2-2 default=severe
+| eval avg_lag=round(avg_lag, 3), delta_lastTime=now()-lastTime, lastTime=strftime(lastTime, "%H:%M:%S")
+| fields env, label, cluster, group, avg_lag, max_lag, current, status, range, lastTime</query>
+        <earliest>-90s</earliest>
+        <latest>now</latest>
+        <refresh>90s</refresh>
+        <refreshType>delay</refreshType>
+    </search>
+
+    <!--
+
+    ZOOKEEPER
+
+    -->
+
+    <row>
+        <panel>
+
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+
+            <html>
+                <!-- configCheck: env or label with one or more space characters are not supported -->
+                <div class="modal fade" id="modal_tagcheck_error" role="dialog">
+                    <div class="modal-dialog">
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&amp;times;</button>
+                                <h3 style="color: indianred; font-size: 20px;"><span class="glyphicon glyphicon-lock"></span>Oops! Unsupported configuration detected</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>Sorry but we detected an unsupported configuration in your installation.<br /><br />
+                                    <b>The Telegraf tags for env and/or label contain unsupported characters.</b>
+                                    <b>Recommended characters are:</b>
+                                    <lu>
+                                        <li>A to Z, in lower or upper case</li>
+                                        <li>0-9</li>
+                                        <li>Underscores, dots and hyphens</li>
+                                    </lu>
+                                    <br />
+                                    <b>White spaces or tabs are not supported, and will produce unexpected errors during token exchanges.</b>
+                                    <br /><br />
+                                    <i>Review your telegraf.conf configuration file:</i>
+                                    <br />
+                                    <pre>[global_tags]<br />env = "my_env"<br />label = "my_env_label"</pre>
+                                    <br />
+                                    <a target="_blank" href="https://telegraf-kafka.readthedocs.io/en/latest/kafka_monitoring.html#telegraf-output-configuration">Visit telegraf-kafka.readthedocs.io</a>
+                                </p>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-default btn-default pull-right" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- configCheck: incomplete setup with Kafka inventory empty -->
+                <div class="modal fade" id="modal_time_to_configure" role="dialog">
+                    <div class="modal-dialog">
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&amp;times;</button>
+                                <h3 style="color: indianred; font-size: 20px;"><span class="glyphicon glyphicon-lock"></span>Oops! It's time for some configuration.</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>Sorry but it looks like the installation is not complete yet, as the Kafka component inventory collection is sadly empty.<br /><br />
+                                    <b>The Kafka inventory is automatically updated at the search head restart, on a regular scheduled basis, and can be triggered manually via the embedded user interface.</b>
+                                    <br /><br />
+                                    <i>Consult the documentation for more information.</i>
+                                    <br /><br />
+                                    <a target="_blank" href="https://telegraf-kafka.readthedocs.io/en/latest/ootb_alerting.html">Visit telegraf-kafka.readthedocs.io</a>
+                                </p>
+                            </div>
+
+                            <div class="modal-footer update-collection">
+                                <button type="submit" class="btn btn-default btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                                <button id="btn_modal_update_collection" class="update-collection btn btn-default btn-primary" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Update collection now</button>
+                                <a target="_blank" class="btn btn-primary" href="telegraf-kafka-alerting" role="button"> Open management interface</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- configCheck: nothing there -->
+                <div class="modal fade" id="modal_check_nodata" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&amp;times;</button>
+                                <h3 style="color: indianred; font-size: 20px;"><span class="glyphicon glyphicon-lock"></span>Oops! Metrics, do you have metrics?</h3>
+                            </div>
+                            <div class="modal-body">
+                                <b>Sorry but that place is pretty much empty so far, a happy Splunk is a Splunk you feed!</b><br /><br />
+                                <div style="margin-left: 15px;">
+                                    <p>
+                                        <img style="float: left; margin: 0px 15px 15px 0px;" src="../../static/app/telegraf-kafka/icons/sorry_poney.png"/>
+                                        If you are just starting, follow the documentation bellow.<br /><br />
+                                        If you have metrics but see this message, we couldn't find data we expected:<br />
+                                        <lu>
+                                            <li>Verify and update the macro "telegraf_kafka_index" if you use custom index name(s)</li>
+                                            <li>Make sure telegraf configurations contains tag values for env and label</li>
+                                        </lu>
+                                        <br />
+                                        <a target="_blank" href="https://telegraf-kafka.readthedocs.io/en/latest/kafka_monitoring.html">Visit telegraf-kafka.readthedocs.io</a>
+                                        <br style="clear: both;" />
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-default btn-default pull-right" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Update KVstore collection done -->
+                <div class="modal fade" id="modal_update_collection_done" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&amp;times;</button>
+                                <h3 style="color: indianred; font-size: 20px;"><span class="glyphicon glyphicon-lock"></span>KVstore collection update</h3>
+                            </div>
+                            <div class="modal-body">
+                                <p>The KVstore collection was updated successfully.<br /><br />
+                                    <b>It is recommended to reload the dashboard, using the button bellow.</b>
+                                </p>
+                            </div>
+
+                            <div class="dashboard-refresh modal-footer">
+                                <button type="submit" id="btn_modal_reload" class="btn btn-default btn-primary pull-right" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close &amp; refresh</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Update KVstore collection done -->
+                <div class="modal fade" id="modal_update_collection_noresults" role="dialog">
+                    <div class="modal-dialog">
+
+                        <!-- Modal content-->
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal">&amp;times;</button>
+                                <h3 style="color: indianred; font-size: 20px;"><span class="glyphicon glyphicon-lock"></span>Oops!</h3>
+                            </div>
+                            <div class="modal-body">
+                                <b>Sorry but the KVstore collection update job could not find any results, and the Kafka inventory remains empty.</b><br /><br />
+
+                                <div style="margin-left: 15px;">
+                                    <p>
+                                        <img style="float: left; margin: 0px 15px 15px 0px;" src="../../static/app/telegraf-kafka/icons/sorry_poney.png"/>
+                                        If you are just starting, follow the documentation bellow.<br /><br />
+                                        If you have metrics but see this message, we couldn't find data we expected:<br />
+                                        <lu>
+                                            <li>Verify and update the macro "telegraf_kafka_index" if you use custom index name(s)</li>
+                                            <li>Make sure telegraf configurations contains tag values for env and label</li>
+                                        </lu>
+                                        <br />
+                                        <a target="_blank" href="https://telegraf-kafka.readthedocs.io/en/latest/kafka_monitoring.html">Visit telegraf-kafka.readthedocs.io</a>
+                                        <br style="clear: both;" />
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="dashboard-refresh modal-footer">
+                                <button type="submit" class="btn btn-default pull-right" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+
+    <row depends="$load_zookeeper$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/zookeeper.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">ZOOKEEPER</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_zookeeper$ $zookeeper_detected$">
+        <panel>
+            <single>
+                <search depends="$zookeeper_detected$">
+                    <query>| savedsearch telegraf-kafka-zookeeper-servers | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ZOOKEEPER SERVER</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="server_activity_summary">
+                    <query>fields avg_latency</query>
+                </search>
+                <option name="numberPrecision">0.00</option>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[10]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">AVERAGE LATENCY (millisecond)</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="server_activity_summary">
+                    <query>fields outstanding_requests</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[10]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">OUTSTANDING REQUESTS</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="server_activity_summary">
+                    <query>fields pending_syncs</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[10]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">PENDING SYNCS</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel depends="$monoenv_detected$">
+            <single>
+                <search depends="$zookeeper_detected$ $monoenv_detected$">
+                    <query>| mstats prestats=t latest(_value) where `telegraf_kafka_index` metric_name="zookeeper.followers" $env$ $label$ by env, label, server span=10s
+| stats latest(_value) as value by _time, env, label, server
+| stats latest(server) as leader by env, label
+| stats values(leader) as leader</query>
+                    <earliest>-5m</earliest>
+                    <latest>now</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ZOOKEEPER LEADER</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_zookeeper$ $zookeeper_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-zookeeper?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_zookeeper$" rejects="$zookeeper_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE ZOOKEEPER NODES DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    KAFKA BROKERS
+
+    -->
+
+    <row depends="$load_kafka_broker$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/kafka-logo-no-text.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">KAFKA BROKERS</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $kafka_broker_detected$">
+        <panel>
+            <single>
+                <search depends="$kafka_broker_detected$">
+                    <query>| savedsearch telegraf-kafka-kafka-brokers | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">KAFKA BROKERS</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search depends="$kafka_broker_detected$">
+                    <query>| mstats latest(_value) as value where `telegraf_kafka_index` metric_name="kafka_controller.OfflinePartitionsCount.Value" $env$ $label$ by jolokia_agent_url
+                        | stats sum(value) as value</query>
+                    <earliest>-90s</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">OFFLINE PARTITIONS</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value where `telegraf_kafka_index` metric_name="kafka_controller.OfflinePartitionsCount.Value" $env$ $label$ by env, label, jolokia_agent_url | stats sum(value) as value by env, label, jolokia_agent_url&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search depends="$kafka_broker_detected$">
+                    <query>| mstats latest(_value) as value where `telegraf_kafka_index` metric_name="kafka_replica_manager.UnderReplicatedPartitions.Value" $env$ $label$ by jolokia_agent_url
+                        | stats sum(value) as value</query>
+                    <earliest>-90s</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">UNDER-REPLICATED PARTITIONS</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as UnderReplicatedPartitions where `telegraf_kafka_index` metric_name=kafka_partition.UnderReplicatedPartitions $env$ $label$ by jolokia_agent_url, topic, partition
+| stats values(jolokia_agent_url) as jolokia_agent_url, dc(partition) as "# Partitions", sum(UnderReplicatedPartitions) as "# UnderReplicatedPartitions" by topic
+| where '# UnderReplicatedPartitions'>0&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="broker_activity_summary">
+                    <query>fields MessagesInPerSec</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">REALTIME AVG MESSAGES/IN SEC</option>
+                <option name="unit">msg/sec</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="broker_activity_summary">
+                    <query>fields KBytesInPerSec</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">REALTIME AVG TRAFFIC IN</option>
+                <option name="unit">Kbps in</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="broker_activity_summary">
+                    <query>fields KBytesOutPerSec</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">REALTIME AVG TRAFFIC OUT</option>
+                <option name="unit">Kbps out</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel depends="$monoenv_detected$">
+            <single>
+                <search depends="$kafka_broker_detected$ $monoenv_detected$">
+                    <query>| mstats latest(_value) prestats=t where `telegraf_kafka_index` metric_name="kafka_controller.ActiveControllerCount.Value" $env$ $label$ by env, label, jolokia_agent_url span=10s
+| stats latest(_value) as ActiveController by _time, env, label, jolokia_agent_url
+| rex field=jolokia_agent_url "//(?&lt;kafka_broker&gt;[^:]*)\:"
+| where ActiveController=1
+| stats latest(kafka_broker) as kafka_broker by env, label | stats values(kafka_broker) as kafka_broker | fields kafka_broker</query>
+                    <earliest>-5m</earliest>
+                    <latest>now</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ACTIVE CONTROLLER</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $kafka_broker_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-kafka-brokers?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_brokers_overview" data-alt-label="HIDE OVERVIEW" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW BROKERS OVERVIEW</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-kafka-topics?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_topics_overview" data-alt-label="HIDE OVERVIEW" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW TOPICS OVERVIEW</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <search depends="$show_brokers_overview$" id="brokers_main_populate">
+        <query>| savedsearch telegraf-kafka-kafka-brokers | search $env$ $label$</query>
+        <earliest>$brokers_time.earliest$</earliest>
+        <latest>$brokers_time.latest$</latest>
+    </search>
+
+    <row depends="$load_kafka_broker$ $show_brokers_overview$">
+        <panel>
+            <title>Kafka brokers overview</title>
+            <input type="time" token="brokers_time" searchWhenChanged="true">
+                <label></label>
+                <default>
+                    <earliestTime>-4h</earliestTime>
+                    <latestTime>now</latestTime>
+                </default>
+            </input>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <input type="multiselect" token="brokers_jolokia_agent_url" searchWhenChanged="true">
+                <label>Kafka broker(s):</label>
+                <!-- Populating Data Model Search -->
+                <search base="brokers_main_populate">
+                    <query>search $env$ $label$ | dedup jolokia_agent_url | sort jolokia_agent_url</query>
+                </search>
+                <valuePrefix>jolokia_agent_url="</valuePrefix>
+                <valueSuffix>"</valueSuffix>
+                <delimiter> OR </delimiter>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>jolokia_agent_url</fieldForLabel>
+                <fieldForValue>jolokia_agent_url</fieldForValue>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $show_brokers_overview$">
+        <panel depends="$alwaysHideCSS$">
+            <html>
+                <style>
+                    #brokers{
+                    width:65% !important;
+                    }
+                    #metrics{
+                    width:35% !important;
+                    }
+                </style>
+            </html>
+        </panel>
+        <panel id="brokers">
+            <title>Brokers (click on the row to open broker detailed view for the selected broker)</title>
+            <table>
+                <search depends="$load_kafka_broker$ $show_brokers_overview$">
+                    <query>| mstats avg(_value) as value where `telegraf_kafka_index`metric_name="kafka_topics.BytesInPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesOutPerSec.OneMinuteRate" $env$ $label$ $brokers_jolokia_agent_url$ by env, label, metric_name, jolokia_agent_url span=10s
+| eval {metric_name}=value
+| stats first(kafka_topics.*.OneMinuteRate) as "*" by _time, env, label, jolokia_agent_url
+| eval KBytesInPerSec=round(BytesInPerSec/1024, 2), KBytesOutPerSec=round(BytesOutPerSec/1024, 2)
+| rex field=jolokia_agent_url "//(?&lt;kafka_broker&gt;[^:]*)\:"
+| fields env, label, _time, kafka_broker, jolokia_agent_url, KBytesInPerSec, KBytesOutPerSec
+| stats latest(KBytesInPerSec) as "KBytes in", sparkline(avg(KBytesInPerSec),) As sparkline_in, latest(KBytesOutPerSec) as "KBytes out", sparkline(avg(KBytesOutPerSec),) As sparkline_out by env, label, kafka_broker, jolokia_agent_url
+| join type=outer env, label, kafka_broker [ | mstats latest(_value) as value where `telegraf_kafka_index` metric_name="kafka_controller.OfflinePartitionsCount.Value" OR metric_name="kafka_replica_manager.UnderReplicatedPartitions.Value" $env$ $label$ $brokers_jolokia_agent_url$ earliest=-2m latest=now by env, label, jolokia_agent_url, metric_name
+| eval {metric_name}=value
+| stats first(kafka_controller.OfflinePartitionsCount.Value) as offline, first(kafka_replica_manager.UnderReplicatedPartitions.Value) as under-replicated by env, label, jolokia_agent_url | rex field=jolokia_agent_url "//(?&lt;kafka_broker&gt;[^:]*)\:"
+| eval icon = "icon|" + if(offline=="0" AND 'under-replicated'=="0", "ico_good ico_small|icon-check|Up", "ico_error ico_small|icon-close|Down") ]
+| fields env, label, kafka_broker, "KBytes in", "sparkline_in", "KBytes out", "sparkline_out", offline, "under-replicated", icon, jolokia_agent_url
+| eval icon=if(isnull(icon), "icon|" + "ico_error ico_small|icon-close|Down", icon) | rename icon as " "
+| fillnull value="ERROR" offline, "under-replicated"</query>
+                    <earliest>$brokers_time.earliest$</earliest>
+                    <latest>$brokers_time.latest$</latest>
+                    <sampleRatio>1</sampleRatio>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="count">100</option>
+                <option name="dataOverlayMode">none</option>
+                <option name="drilldown">row</option>
+                <option name="percentagesRow">false</option>
+                <option name="refresh.display">none</option>
+                <option name="rowNumbers">false</option>
+                <option name="totalsRow">false</option>
+                <option name="wrap">true</option>
+                <option name="fields">env, label, kafka_broker, "KBytes in", "sparkline_in", "KBytes out", "sparkline_out", offline, "under-replicated", " "</option>
+                <format field="sparkline_in" type="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format field="sparkline_out" type="sparkline">
+                    <option name="lineColor">#5379af</option>
+                    <option name="fillColor">#CCDDFF</option>
+                    <option name="lineWidth">1</option>
+                    <option name="height">25</option>
+                </format>
+                <format type="color" field="KBytes in">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <format type="color" field="KBytes out">
+                    <colorPalette type="minMidMax" maxColor="#31A35F" minColor="#FFFFFF"></colorPalette>
+                    <scale type="minMidMax"></scale>
+                </format>
+                <drilldown>
+                    <link>/app/telegraf-kafka/overview_broker_details?env=$row.env$&amp;label=$row.label$&amp;kafka_broker=$row.kafka_broker$&amp;jolokia_agent_url=$row.jolokia_agent_url$</link>
+                </drilldown>
+            </table>
+        </panel>
+        <panel id="metrics">
+            <title>Combined Metrics</title>
+            <table>
+                <search depends="$load_kafka_broker$ $show_brokers_overview$">
+                    <query>| mstats latest(_value) as value where `telegraf_kafka_index`
+metric_name="kafka_topics.MessagesInPerSec.MeanRate" OR metric_name="kafka_topics.MessagesInPerSec.OneMinuteRate" OR metric_name="kafka_topics.MessagesInPerSec.FiveMinuteRate" OR metric_name="kafka_topics.MessagesInPerSec.FifteenMinuteRate"
+OR metric_name="kafka_topics.BytesInPerSec.MeanRate" OR metric_name="kafka_topics.BytesInPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesInPerSec.FiveMinuteRate" OR metric_name="kafka_topics.BytesInPerSec.FifteenMinuteRate"
+OR metric_name="kafka_topics.BytesOutPerSec.MeanRate" OR metric_name="kafka_topics.BytesOutPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesOutPerSec.FiveMinuteRate" OR metric_name="kafka_topics.BytesOutPerSec.FifteenMinuteRate"
+OR metric_name="kafka_topics.BytesRejectedPerSec.MeanRate" OR metric_name="kafka_topics.BytesRejectedPerSec.OneMinuteRate" OR metric_name="kafka_topics.BytesRejectedPerSec.FiveMinuteRate" OR metric_name="kafka_topics.BytesRejectedPerSec.FifteenMinuteRate"
+OR metric_name="kafka_topics.FailedFetchRequestsPerSec.MeanRate" OR metric_name="kafka_topics.FailedFetchRequestsPerSec.OneMinuteRate" OR metric_name="kafka_topics.FailedFetchRequestsPerSec.FiveMinuteRate" OR metric_name="kafka_topics.FailedFetchRequestsPerSec.FifteenMinuteRate"
+OR metric_name="kafka_topics.FailedProduceRequestsPerSec.MeanRate" OR metric_name="kafka_topics.FailedProduceRequestsPerSec.OneMinuteRate" OR metric_name="kafka_topics.FailedProduceRequestsPerSec.FiveMinuteRate" OR metric_name="kafka_topics.FailedProduceRequestsPerSec.FifteenMinuteRate" $env$ $label$ $brokers_jolokia_agent_url$ by metric_name, jolokia_agent_url
+| rex field=metric_name "[^\.]*\.(?&lt;rate&gt;[^\.]*)\."
+| eval {metric_name}=value
+| stats first(kafka_topics.*) as "*" by rate, jolokia_agent_url
+| eval Mean=case(isnotnull('FailedProduceRequestsPerSec.MeanRate'), 'FailedProduceRequestsPerSec.MeanRate', isnotnull('FailedFetchRequestsPerSec.MeanRate'), 'FailedFetchRequestsPerSec.MeanRate', isnotnull('BytesRejectedPerSec.MeanRate'), 'BytesRejectedPerSec.MeanRate', isnotnull('BytesInPerSec.MeanRate'), 'BytesInPerSec.MeanRate', isnotnull('BytesOutPerSec.MeanRate'), 'BytesOutPerSec.MeanRate', isnotnull('MessagesInPerSec.MeanRate'), 'MessagesInPerSec.MeanRate')
+| eval 1min=case(isnotnull('FailedProduceRequestsPerSec.OneMinuteRate'), 'FailedProduceRequestsPerSec.OneMinuteRate', isnotnull('FailedFetchRequestsPerSec.OneMinuteRate'), 'FailedFetchRequestsPerSec.OneMinuteRate', isnotnull('BytesRejectedPerSec.OneMinuteRate'), 'BytesRejectedPerSec.OneMinuteRate', isnotnull('BytesInPerSec.OneMinuteRate'), 'BytesInPerSec.OneMinuteRate', isnotnull('BytesOutPerSec.OneMinuteRate'), 'BytesOutPerSec.OneMinuteRate', isnotnull('MessagesInPerSec.OneMinuteRate'), 'MessagesInPerSec.OneMinuteRate')
+| eval 5min=case(isnotnull('FailedProduceRequestsPerSec.FiveMinuteRate'), 'FailedProduceRequestsPerSec.FiveMinuteRate', isnotnull('FailedFetchRequestsPerSec.FiveMinuteRate'), 'FailedFetchRequestsPerSec.FiveMinuteRate', isnotnull('BytesRejectedPerSec.FiveMinuteRate'), 'BytesRejectedPerSec.FiveMinuteRate', isnotnull('BytesInPerSec.FiveMinuteRate'), 'BytesInPerSec.FiveMinuteRate', isnotnull('BytesOutPerSec.FiveMinuteRate'), 'BytesOutPerSec.FiveMinuteRate', isnotnull('MessagesInPerSec.FiveMinuteRate'), 'MessagesInPerSec.FiveMinuteRate')
+| eval 15min=case(isnotnull('FailedProduceRequestsPerSec.FifteenMinuteRate'), 'FailedProduceRequestsPerSec.FifteenMinuteRate', isnotnull('FailedFetchRequestsPerSec.FifteenMinuteRate'), 'FailedFetchRequestsPerSec.FifteenMinuteRate', isnotnull('BytesRejectedPerSec.FifteenMinuteRate'), 'BytesRejectedPerSec.FifteenMinuteRate', isnotnull('BytesInPerSec.FifteenMinuteRate'), 'BytesInPerSec.FifteenMinuteRate', isnotnull('BytesOutPerSec.FifteenMinuteRate'), 'BytesOutPerSec.FifteenMinuteRate', isnotnull('MessagesInPerSec.FifteenMinuteRate'), 'MessagesInPerSec.FifteenMinuteRate')
+| fields rate, jolokia_agent_url, Mean, 1min, 5min, 15min
+| stats avg(*) as "*" by rate
+| fields rate, Mean, 1min, 5min, 15min
+| foreach Mean, 1min, 5min, 15min [ eval "&lt;&lt;FIELD&gt;&gt;" = if(rate="BytesInPerSec" OR rate="BytesOutPerSec", round('&lt;&lt;FIELD&gt;&gt;'/1024, 2), '&lt;&lt;FIELD&gt;&gt;') ]
+| rex field=rate mode=sed "s/BytesInPerSec/KBytesInPerSec/g"
+| rex field=rate mode=sed "s/BytesOutPerSec/KBytesOutPerSec/g"
+| eval order=case(rate="MessagesInPerSec", 0, rate="KBytesInPerSec", 1, rate="KBytesOutPerSec", 2, rate="BytesRejectedPerSec", 3, rate="FailedFetchRequestsPerSec", 4, rate="FailedProduceRequestsPerSec", 5)
+| sort order | fields - order
+| foreach Mean, 1min, 5min, 15min [ eval "&lt;&lt;FIELD&gt;&gt;" = round('&lt;&lt;FIELD&gt;&gt;', 2) ]
+| rename 1min as "1 min", 5min as "5 min", 15min as "15 min"
+| rex field=rate mode=sed "s/MessagesInPerSec/Messages in \/sec/g"
+| rex field=rate mode=sed "s/KBytesInPerSec/KBytes in \/sec/g"
+| rex field=rate mode=sed "s/KBytesOutPerSec/KBytes out \/sec/g"
+| rex field=rate mode=sed "s/BytesRejectedPerSec/Bytes rejected \/sec/g"
+| rex field=rate mode=sed "s/FailedFetchRequestsPerSec/Failed fetch request \/sec/g"
+| rex field=rate mode=sed "s/FailedProduceRequestsPerSec/Failed produce request \/sec/g"
+| rename rate as Rate</query>
+                    <earliest>$brokers_time.earliest$</earliest>
+                    <latest>$brokers_time.latest$</latest>
+                    <refresh>30s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">none</option>
+                <option name="refresh.display">none</option>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $show_brokers_overview$">
+        <panel>
+            <title>All topics messages per sec</title>
+            <chart>
+                <search depends="$show_brokers_overview$">
+                    <query>| mstats avg(_value) prestats=true where `telegraf_kafka_index` metric_name="kafka_topics.MessagesInPerSec.OneMinuteRate" $env$ $label$ $brokers_jolokia_agent_url$ span=10s by jolokia_agent_url
+| timechart limit=20 useother=f `telegraf_kafka_span` avg(_value) as MessagesInPerSec by jolokia_agent_url</query>
+                    <earliest>$brokers_time.earliest$</earliest>
+                    <latest>$brokers_time.latest$</latest>
+                    <sampleRatio>1</sampleRatio>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+    </row>
+    <row depends="$load_kafka_broker$ $show_brokers_overview$">
+        <panel>
+            <title>All topics KBytesInPerSec</title>
+            <chart>
+                <search depends="$show_brokers_overview$">
+                    <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="kafka_topics.BytesInPerSec.OneMinuteRate" $env$ $label$ $brokers_jolokia_agent_url$ span=10s by jolokia_agent_url
+| eval value=value/1024
+| timechart limit=20 useother=f `telegraf_kafka_span` avg(value) as KBytesInPerSec by jolokia_agent_url</query>
+                    <earliest>$brokers_time.earliest$</earliest>
+                    <latest>$brokers_time.latest$</latest>
+                    <sampleRatio>1</sampleRatio>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+        <panel>
+            <title>All topics KBytesOutPerSec</title>
+            <chart>
+                <search depends="$show_brokers_overview$">
+                    <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="kafka_topics.BytesOutPerSec.OneMinuteRate" $env$ $label$ $brokers_jolokia_agent_url$ span=10s by jolokia_agent_url
+| eval value=value/1024
+| timechart limit=20 useother=f `telegraf_kafka_span` avg(value) as KBytesOutPerSec by jolokia_agent_url</query>
+                    <earliest>$brokers_time.earliest$</earliest>
+                    <latest>$brokers_time.latest$</latest>
+                    <sampleRatio>1</sampleRatio>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+    </row>
+
+    <search depends="$load_kafka_broker$ $show_topics_overview$" id="main_populate_topics">
+        <query>| savedsearch telegraf-kafka-kafka-topics | search $env$ $label$</query>
+        <earliest>$topics_time.earliest$</earliest>
+        <latest>$topics_time.latest$</latest>
+    </search>
+
+    <row depends="$load_kafka_broker$ $show_topics_overview$">
+        <panel>
+            <title>Kafka topics overview</title>
+            <input type="time" token="topics_time" searchWhenChanged="true">
+                <label></label>
+                <default>
+                    <earliestTime>-4h</earliestTime>
+                    <latestTime>now</latestTime>
+                </default>
+            </input>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <input type="multiselect" token="topics_topic" searchWhenChanged="true">
+                <label>Kafka topic(s):</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate_topics">
+                    <query>search $env$ $label$ | dedup kafka_topic | sort 0 kafka_topic</query>
+                </search>
+                <valuePrefix>topic="</valuePrefix>
+                <valueSuffix>"</valueSuffix>
+                <delimiter> OR </delimiter>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>kafka_topic</fieldForLabel>
+                <fieldForValue>kafka_topic</fieldForValue>
+            </input>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $show_topics_overview$">
+        <panel>
+            <title>Messages/sec</title>
+            <chart>
+                <search depends="$show_topics_overview$">
+                    <query>| mstats avg(_value) prestats=true where `telegraf_kafka_index` metric_name="kafka_topic.MessagesInPerSec.OneMinuteRate" $env$ $label$ $topics_topic$ span=10s by topic
+| eval value=round(value, 3)
+| timechart `telegraf_kafka_span` avg(_value) as "Avg" limit=20 useother=false by topic</query>
+                    <earliest>$topics_time.earliest$</earliest>
+                    <latest>$topics_time.latest$</latest>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$ $show_topics_overview$">
+        <panel>
+            <title>Traffic Kbps/In</title>
+            <chart>
+                <search depends="$show_topics_overview$">
+                    <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="kafka_topic.BytesInPerSec.OneMinuteRate" $env$ $label$ $topics_topic$ span=10s by topic
+| eval value=round(value/1024, 3)
+| timechart `telegraf_kafka_span` avg(value) as "Avg" useother=false by topic</query>
+                    <earliest>$topics_time.earliest$</earliest>
+                    <latest>$topics_time.latest$</latest>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+        <panel>
+            <title>Traffic Kbps/Out</title>
+            <chart>
+                <search depends="$show_topics_overview$">
+                    <query>| mstats avg(_value) as value where `telegraf_kafka_index` metric_name="kafka_topic.BytesOutPerSec.OneMinuteRate" $env$ $label$ $topics_topic$ span=10s by topic
+| eval value=round(value/1024, 3)
+| timechart `telegraf_kafka_span` avg(value) as "Avg" useother=false by topic</query>
+                    <earliest>$topics_time.earliest$</earliest>
+                    <latest>$topics_time.latest$</latest>
+                </search>
+                <option name="charting.chart">line</option>
+                <option name="charting.axisTitleX.visibility">collapsed</option>
+                <option name="charting.axisTitleY.visibility">collapsed</option>
+                <option name="charting.chart.nullValueMode">gaps</option>
+                <option name="charting.chart.showDataLabels">none</option>
+                <option name="charting.legend.placement">top</option>
+                <option name="charting.drilldown">all</option>
+            </chart>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_broker$" rejects="$kafka_broker_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE KAFKA BROKERS DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    KAFKA CONNECT WORKERS
+
+    -->
+
+    <row depends="$load_kafka_connect$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/kafka-logo-no-text.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">KAFKA CONNECT WORKERS</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $kafka_connect_detected$">
+        <panel>
+            <single>
+                <search depends="$kafka_connect_detected$">
+                    <query>| savedsearch telegraf-kafka-kafka-connect-workers | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">KAFKA CONNECT WORKERS</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_state_summary">
+                    <query>fields worker.connector-startup-failure-total</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">FAILED WORKER STARTUP</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.worker.task-startup-failure-total" OR metric_name="kafka_connect.worker.connector-startup-failure-total" OR metric_name="kafka_connect.worker.time-since-last-rebalance-ms" OR metric_name="kafka_connect.worker.task-count" $env$ $label$ by metric_name, env, label, jolokia_agent_url | eval {metric_name}=value | stats first(kafka_connect.*) as "*" by env, label, jolokia_agent_url&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_state_summary">
+                    <query>fields worker.task-startup-failure-total</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">FAILED TASKS STARTUP</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.worker.task-startup-failure-total" OR metric_name="kafka_connect.worker.connector-startup-failure-total" OR metric_name="kafka_connect.worker.time-since-last-rebalance-ms" OR metric_name="kafka_connect.worker.task-count" $env$ $label$ by metric_name, env, label, jolokia_agent_url | eval {metric_name}=value | stats first(kafka_connect.*) as "*" by env, label, jolokia_agent_url&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_state_summary">
+                    <query>fields duration</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">DURATION SINCE LAST REBALANCE (MIN FOR ALL WORKERS)</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_state_summary">
+                    <query>fields worker.task-count</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">WORKER TASKS COUNT (TOTAL TASKS FOR ALL WORKERS)</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                    <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.worker.task-startup-failure-total" OR metric_name="kafka_connect.worker.connector-startup-failure-total" OR metric_name="kafka_connect.worker.time-since-last-rebalance-ms" OR metric_name="kafka_connect.worker.task-count" $env$ $label$ by metric_name, env, label, jolokia_agent_url
+| eval {metric_name}=value
+| stats first(kafka_connect.*) as "*" by env, label, jolokia_agent_url
+                        | eval duration=tostring(round('worker.time-since-last-rebalance-ms'/1000, 0), "duration")</link>
+                </drilldown>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $kafka_connect_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-kafka-connect?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $kafka_connect_detected$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>KAFKA CONNECT SOURCE TASKS</h1>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <h1>KAFKA CONNECT SINK TASKS</h1>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $kafka_connect_detected$">
+        <panel>
+            <single>
+                <search base="connect_tasks_summary">
+                    <query>where role="kafka_source_task" | stats count</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">SOURCE CONNECTORS (ACTIVE AND MONITORED)</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" OR metric_name="kafka_connect.connector-task.running-ratio" OR metric_name="kafka_connect.error-task.total-errors-logged" OR metric_name="kafka_connect.error-task.total-retries" connector="*" $env$ $label$ by metric_name, env, label, task, connector
+| eval {metric_name}=value
+| stats min(kafka_connect.connector-task.status) as connector-task.status, first(kafka_connect.*) as "*" by env, label, connector, task
+| eval connector-task.running-ratio=round('connector-task.running-ratio'*100, 2)
+| fields env, label, connector, task, connector-task.status
+| rename connector-task.status as integer_status
+| eval status=case(integer_status=0, "paused", integer_status=1, "running", integer_status=2, "unassigned", integer_status=3, "failed", integer_status=4, "destroyed")
+| join env, label, connector [ | inputlookup kafka_connect_tasks_monitoring ]
+| stats first(*) as "*", values(task) as task, list(status) as status by env, label, connector
+| fields env, label, connector, role, task, status, monitoring_state
+| where monitoring_state="enabled" | where role="kafka_source_task"&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_tasks_summary">
+                    <query>where role="kafka_source_task"
+| fillnull value=5 integer_status
+| fillnull value="unknown" status
+| eval range_status=case(status="running", 0, status="paused", 1, status!="running" AND status!="paused", 2)
+| rangemap field=range_status low=0-0 high=1-1 severe=2-5 default=severe
+| fields status, range, integer_status, range_status
+| sort - limit=0 range_status
+| append [ makeresults ] | fillnull value="unknown" status | fillnull value="elevated" range | fields - _time</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="useColors">0</option>
+                <option name="underLabel">AGGREGATED STATE</option>
+                <option name="drilldown">all</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" OR metric_name="kafka_connect.connector-task.running-ratio" OR metric_name="kafka_connect.error-task.total-errors-logged" OR metric_name="kafka_connect.error-task.total-retries" connector="*" $env$ $label$ by metric_name, task, connector
+| eval {metric_name}=value
+| stats min(kafka_connect.connector-task.status) as connector-task.status, first(kafka_connect.*) as "*" by connector
+| eval connector-task.running-ratio=round('connector-task.running-ratio'*100, 2) | fields connector connector-task.status | rename connector-task.status as integer_status
+| eval status=case(integer_status=0, "paused", integer_status=1, "running", integer_status=2, "unassigned", integer_status=3, "failed", integer_status=4, "destroyed")
+| join connector [ | inputlookup kafka_connect_tasks_monitoring ] | where monitoring_state="enabled" | where role="kafka_source_task" | fillnull value="severe" status&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_tasks_summary">
+                    <query>where role="kafka_sink_task" | stats count</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">SINK CONNECTORS (ACTIVE AND MONITORED)</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" OR metric_name="kafka_connect.connector-task.running-ratio" OR metric_name="kafka_connect.error-task.total-errors-logged" OR metric_name="kafka_connect.error-task.total-retries" connector="*" $env$ $label$ by metric_name, env, label, task, connector
+| eval {metric_name}=value
+| stats min(kafka_connect.connector-task.status) as connector-task.status, first(kafka_connect.*) as "*" by env, label, connector, task
+| eval connector-task.running-ratio=round('connector-task.running-ratio'*100, 2)
+| fields env, label, connector, task, connector-task.status
+| rename connector-task.status as integer_status
+| eval status=case(integer_status=0, "paused", integer_status=1, "running", integer_status=2, "unassigned", integer_status=3, "failed", integer_status=4, "destroyed")
+| join env, label, connector [ | inputlookup kafka_connect_tasks_monitoring ]
+| stats first(*) as "*", values(task) as task, list(status) as status by env, label, connector
+| fields env, label, connector, role, task, status, monitoring_state
+| where monitoring_state="enabled" | where role="kafka_sink_task"&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="connect_tasks_summary">
+                    <query>where role="kafka_sink_task"
+| fillnull value=5 integer_status
+| fillnull value="unknown" status
+| eval range_status=case(status="running", 0, status="paused", 1, status!="running" AND status!="paused", 2)
+| rangemap field=range_status low=0-0 high=1-1 severe=2-5 default=severe
+| fields status, range, integer_status, range_status
+| sort - limit=0 range_status
+| append [ makeresults ] | fillnull value="unknown" status | fillnull value="elevated" range | fields - _time</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="useColors">0</option>
+                <option name="underLabel">AGGREGATED STATE</option>
+                <option name="drilldown">all</option>
+                <drilldown>
+                  <link target="_blank">search?q=| mstats latest(_value) as value WHERE `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" OR metric_name="kafka_connect.connector-task.running-ratio" OR metric_name="kafka_connect.error-task.total-errors-logged" OR metric_name="kafka_connect.error-task.total-retries" connector="*" $env$ $label$ by metric_name, task, connector
+| eval {metric_name}=value
+| stats min(kafka_connect.connector-task.status) as connector-task.status, first(kafka_connect.*) as "*" by connector
+| eval connector-task.running-ratio=round('connector-task.running-ratio'*100, 2) | fields connector connector-task.status | rename connector-task.status as integer_status
+| eval status=case(integer_status=0, "paused", integer_status=1, "running", integer_status=2, "unassigned", integer_status=3, "failed", integer_status=4, "destroyed")
+| join connector [ | inputlookup kafka_connect_tasks_monitoring ] | where monitoring_state="enabled" | where role="kafka_sink_task" | fillnull value="severe" status&amp;earliest=-90s&amp;latest=now</link>
+                </drilldown>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $kafka_connect_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-kafka-connect-source-task?form.env=$form.env$&amp;form.label=$form.label$" role="button"> SOURCE TASK DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_source_tasks" data-alt-label="HIDE ACTIVE TASKS" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW ACTIVE TASKS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_source_tasks_alerts" data-alt-label="HIDE TASKS IN ALERT" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW TASKS IN ALERT</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-kafka-connect-sink-task?form.env=$form.env$&amp;form.label=$form.label$" role="button"> SINK TASK DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_sink_tasks" data-alt-label="HIDE ACTIVE TASKS" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW ACTIVE TASKS</button>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_sink_tasks_alerts" data-alt-label="HIDE TASKS IN ALERT" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW TASKS IN ALERT</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $show_source_tasks$">
+        <panel>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <table>
+            <title>Kafka Connect source connector tasks status (click on the row to open entity view for that connector)</title>
+                <search depends="$show_source_tasks$">
+                    <query>| savedsearch "Kafka monitoring - tasks status report" | search $env$ $label$ | where role="kafka_source_task" | fields - integer_status | eval icon = "icon|" + case(range=="low","ico_good ico_small|icon-check|Up", range=="elevated" OR isnull(range), "ico_error ico_small|icon-close|Down") | rename icon as " " | fields - range</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">row</option>
+                <drilldown>
+                    <link>/app/telegraf-kafka/telegraf-kafka-kafka-connect-source-task?form.env=$row.env$&amp;form.label=$row.label$&amp;form.connector=$row.connector$</link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $show_source_tasks_alerts$">
+        <panel>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <table>
+            <title>Kafka Connect source connector in alert (click on the row to open entity view for that connector)</title>
+                <search depends="$show_source_tasks_alerts$">
+                    <query>| mstats latest(_value) as task_state_id where `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" connector=* by env, label, connector, jolokia_agent_url, task span=1s
+| stats max(_time) as lasttime, values(jolokia_agent_url) as jolokia_agent_url, min(task_state_id) as task_state_id, values(task) as task by env, label, connector
+| eval task_state=case(task_state_id=0, "paused", task_state_id=1, "running", task_state_id=2, "unassigned", task_state_id=3, "failed", task_state_id=4, "destroyed")
+| append [ | inputlookup kafka_connect_tasks_monitoring ]
+| stats first(task_state) as task_state, values(jolokia_agent_url) as jolokia_agent_url, values(task) as task, max(lasttime) as lasttime, first(_key) as _key, first(role) as role, first(grace_period) as grace_period, first(monitoring_state) as monitoring_state by env, label, connector
+| where role="kafka_source_task"
+| appendpipe [ | stats dc(task) as number_tasks by env, label, connector ]
+| stats values(*) as "*" by env, label, connector
+| rename task as task_id | rex field=jolokia_agent_url "//(?&lt;connect_worker&gt;[^:]*)\:"
+| fields env, label, connector, connect_worker, monitoring_state, task_state, number_tasks, task_id, grace_period, lasttime
+| eval now=now(), delta_seconds=now-lasttime, now=strftime(now, "%d/%m/%Y %H:%M:%S"), lasttime=strftime(lasttime, "%d/%m/%Y %H:%M:%S")
+| eval state=case(number_tasks&lt;1 AND delta_seconds&gt;=grace_period AND task_state!="running", "severe",
+number_tasks&lt;1 AND isnull(delta_seconds) AND task_state!="running", "severe",
+number_tasks&gt;=1 AND delta_seconds&lt;grace_period AND task_state="running", "normal")
+| rename now as "check_time"
+| fillnull value="severe" state
+| appendcols [ | inputlookup kafka_alerting_maintenance ] | filldown maintenance_mode
+| where state="severe" AND monitoring_state="enabled" AND NOT maintenance_mode="enabled"
+| eval icon = "icon|" + "ico_error ico_small|icon-close|Down" | rename lasttime as last_time
+| search $env$ $label$
+| fields env, label, connector, monitoring_state, grace_period, last_time, check_time, delta_seconds, maintenance_mode, state, icon | rename icon as " "</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">row</option>
+                <drilldown>
+                    <link>/app/telegraf-kafka/telegraf-kafka-kafka-connect-source-task?form.env=$row.env$&amp;form.label=$row.label$&amp;form.connector=$row.connector$</link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $show_sink_tasks$">
+        <panel>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <table>
+            <title>Kafka Connect sink connector tasks status (click on the row to open entity view for that connector)</title>
+                <search depends="$show_sink_tasks$">
+                    <query>| savedsearch "Kafka monitoring - tasks status report" | search $env$ $label$ | where role="kafka_sink_task" | fields - integer_status | eval icon = "icon|" + case(range=="low","ico_good ico_small|icon-check|Up", range=="elevated" OR isnull(range), "ico_error ico_small|icon-close|Down") | rename icon as " " | fields - range</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">row</option>
+                <drilldown>
+                    <link>/app/telegraf-kafka/telegraf-kafka-kafka-connect-sink-task?form.env=$row.env$&amp;form.label=$row.label$&amp;form.connector=$row.connector$</link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$ $show_sink_tasks_alerts$">
+        <panel>
+            <input type="dropdown" token="env" searchWhenChanged="true">
+                <label>Env:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>dedup env | sort 0 env</query>
+                </search>
+                <prefix>env="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>env</fieldForLabel>
+                <fieldForValue>env</fieldForValue>
+            </input>
+            <input type="dropdown" token="label" searchWhenChanged="true">
+                <label>Label:</label>
+                <!-- Populating Data Model Search -->
+                <search base="main_populate">
+                    <query>search $env$ | dedup label | sort 0 label</query>
+                </search>
+                <prefix>label="</prefix>
+                <suffix>"</suffix>
+                <choice value="*">ANY</choice>
+                <initialValue>*</initialValue>
+                <fieldForLabel>label</fieldForLabel>
+                <fieldForValue>label</fieldForValue>
+            </input>
+            <table>
+            <title>Kafka Connect sink connectors in alert (click on the row to open entity view for that connector)</title>
+                <search depends="$show_sink_tasks_alerts$">
+                    <query>| mstats latest(_value) as task_state_id where `telegraf_kafka_index` metric_name="kafka_connect.connector-task.status" connector=* by env, label, connector, jolokia_agent_url, task span=1s
+| stats max(_time) as lasttime, values(jolokia_agent_url) as jolokia_agent_url, min(task_state_id) as task_state_id, values(task) as task by env, label, connector
+| eval task_state=case(task_state_id=0, "paused", task_state_id=1, "running", task_state_id=2, "unassigned", task_state_id=3, "failed", task_state_id=4, "destroyed")
+| append [ | inputlookup kafka_connect_tasks_monitoring ]
+| stats first(task_state) as task_state, values(jolokia_agent_url) as jolokia_agent_url, values(task) as task, max(lasttime) as lasttime, first(_key) as _key, first(role) as role, first(grace_period) as grace_period, first(monitoring_state) as monitoring_state by env, label, connector
+| where role="kafka_sink_task"
+| appendpipe [ | stats dc(task) as number_tasks by env, label, connector ]
+| stats values(*) as "*" by env, label, connector
+| rename task as task_id | rex field=jolokia_agent_url "//(?&lt;connect_worker&gt;[^:]*)\:"
+| fields env, label, connector, connect_worker, monitoring_state, task_state, number_tasks, task_id, grace_period, lasttime
+| eval now=now(), delta_seconds=now-lasttime, now=strftime(now, "%d/%m/%Y %H:%M:%S"), lasttime=strftime(lasttime, "%d/%m/%Y %H:%M:%S")
+| eval state=case(number_tasks&lt;1 AND delta_seconds&gt;=grace_period AND task_state!="running", "severe",
+number_tasks&lt;1 AND isnull(delta_seconds) AND task_state!="running", "severe",
+number_tasks&gt;=1 AND delta_seconds&lt;grace_period AND task_state="running", "normal")
+| rename now as "check_time"
+| fillnull value="severe" state
+| appendcols [ | inputlookup kafka_alerting_maintenance ] | filldown maintenance_mode
+| where state="severe" AND monitoring_state="enabled" AND NOT maintenance_mode="enabled"
+| eval icon = "icon|" + "ico_error ico_small|icon-close|Down" | rename lasttime as last_time
+| search $env$ $label$
+| fields env, label, connector, monitoring_state, grace_period, last_time, check_time, delta_seconds, maintenance_mode, state, icon | rename icon as " "</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                    <refresh>90s</refresh>
+                    <refreshType>delay</refreshType>
+                </search>
+                <option name="drilldown">row</option>
+                <drilldown>
+                    <link>/app/telegraf-kafka/telegraf-kafka-kafka-connect-sink-task?form.env=$row.env$&amp;form.label=$row.label$&amp;form.connector=$row.connector$</link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_connect$" rejects="$kafka_connect_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE KAFKA CONNECT WORKER DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    BURROW
+
+    -->
+
+    <row depends="$load_kafka_burrow$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/kafka-logo-no-text.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">KAFKA CONSUMERS MONITORING WITH BURROW</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_burrow$ $burrow_detected$">
+        <panel>
+            <single>
+                <search base="burrow" depends="$burrow_detected$">
+                    <query>stats count</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">KAFKA GROUP CONSUMERS MONITORED</option>
+                <option name="useColors">1</option>
+                <drilldown>
+                  <link target="_self">/app/telegraf-kafka/telegraf-burrow?form.env=$form.env$&amp;form.label=$form.label$</link>
+                </drilldown>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="burrow">
+                    <query>| append [ | inputlookup kafka_burrow_consumers_monitoring | where monitoring_state="enabled" ]
+| stats first(*) as "*" by env, label, cluster, group
+| where monitoring_state="enabled"
+| eventstats count(eval(range="severe")) as count_severe, count(eval(range="elevated")) as count_elevated
+| stats first(count_severe) as count_severe, first(count_elevated) as count_elevated
+| eval status=if(count_severe>count_elevated, 2, 1), status=if(count_severe=0 AND count_elevated=0, 0, status)
+| rangemap field=status low=0-0 elevated=1-1 severe=2-2 default=severe
+| eval status_human=case(range="low", "OK", range="elevated", "WARN", range="severe", "ERR")
+| append [ | makeresults | eval status_none="no consumers monitored yet", range_none="gray" ] | stats first(*) as "*"
+| eval status_human=if(isnull(status_human), "0 monitored consumers (update collection required)", status_human), range=if(isnull(range), range_none, range)
+| fields status_human, range</query>
+                </search>
+                <option name="colorBy">value</option>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="useColors">0</option>
+                <option name="underLabel">AGGREGATED STATE</option>
+                <option name="drilldown">all</option>
+                <drilldown>
+                  <link target="_self">/app/telegraf-kafka/telegraf-burrow?form.env=$form.env$&amp;form.label=$form.label$</link>
+                </drilldown>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_burrow$ $burrow_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-burrow?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN BURROW DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+        <panel>
+            <html>
+                <div style="text-align: center;" class="active-button">
+                    <button class="btn btn-default btn-primary" data-token-name="show_consumers_status" data-alt-label="HIDE CONSUMERS STATUS" data-token-value="fields *"><span class="glyphicon glyphicon-remove"></span> SHOW CONSUMERS STATUS</button>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_burrow$ $show_consumers_status$">
+        <panel>
+            <table>
+            <title>Kafka Consumers Lag Burrow Monitoring</title>
+                <search depends="$show_consumers_status$">
+                    <query>| mstats latest(_value) as value where metric_name="burrow_group.lag" OR metric_name="burrow_group.status_code" `telegraf_kafka_index` group!="" $env$ $label$ by env, label, cluster, group, metric_name span=10s
+| eval {metric_name}=value
+| stats first(burrow_group.*) as "*" by _time, env, label, cluster, group
+| stats max(_time) as lastTime, avg(lag) as avg_lag, max(lag) as max_lag, latest(lag) as current, sparkline(avg(lag),) As sparkline, latest(status_code) as status_code by env, label, cluster, group
+| lookup burrow_status status_code OUTPUT status, description
+| eval icon = "icon|" + case(status_code=="1","ico_good ico_small|icon-check|Up", status_code=="3", "ico_warn ico_small|icon-close|Down", status_code=="2" OR status_code=="4" OR status_code=="5" OR status_code=="6" OR isnull(status_code), "ico_error ico_small|icon-close|Down")
+| eval avg_lag=round(avg_lag, 3), delta_lastTime=now()-lastTime, lastTime=strftime(lastTime, "%H:%M:%S")
+| eval status=if(delta_lastTime>120, "UNKNOWN", status), description=if(delta_lastTime>120, "The delta in seconds between the last state received and now has exceeded 120 seconds", description)
+| eval icon=if(delta_lastTime>120, "icon|" + "ico_error ico_small|icon-close|Down", icon)
+| fields env, label, cluster, group, avg_lag, max_lag, current, sparkline, status, icon, lastTime, description | rename description as "status description", icon as " "
+| lookup kafka_burrow_consumers_monitoring env, label, cluster, group OUTPUT monitoring_state</query>
+                    <earliest>-60m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="drilldown">row</option>
+                <drilldown>
+                    <link>/app/telegraf-kafka/telegraf-burrow-detailed?env=$row.env$&amp;label=$row.label$&amp;cluster=$row.cluster$&amp;group=$row.group$</link>
+                </drilldown>
+            </table>
+        </panel>
+    </row>
+
+    <row depends="$load_kafka_burrow$" rejects="$burrow_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE BURROW DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    CONFLUENT SCHEMA-REGISTRY
+
+    -->
+
+    <row depends="$load_confluent_schema_registry$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/confluent-logo.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">SCHEMA-REGISTRY</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_schema_registry$ $schema_registry_detected$">
+        <panel>
+            <single>
+                <search depends="$schema_registry_detected$">
+                    <query>| savedsearch telegraf-kafka-schema-registry | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">SCHEMA-REGISTRY NODES</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="schema_registry_summary">
+                    <query>fields "jetty-metrics.connections-active"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ACTIVE CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="schema_registry_summary">
+                    <query>fields "jetty-metrics.connections-opened-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">OPENED CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="schema_registry_summary">
+                    <query>fields "jetty-metrics.connections-closed-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">CLOSED CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="schema_registry_summary_jersey">
+                    <query>fields "jersey-metrics.request-error-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">HTTP ERROR RESPONSES REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_schema_registry$ $schema_registry_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-confluent-shema-registry?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_schema_registry$" rejects="$schema_registry_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE SCHEMA-REGISTRY NODES DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    CONFLUENT KSQL-SERVER
+
+    -->
+
+    <row depends="$load_confluent_ksql_server$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/confluent-logo.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">KSQL-SERVER</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_ksql_server$ $ksql_server_detected$">
+        <panel>
+            <single>
+                <search depends="$ksql_server_detected$">
+                    <query>| savedsearch telegraf-kafka-ksql-server | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">KSQL-SERVER NODES</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="ksql_server_queries_activity_summary">
+                    <query>fields num-active-queries</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ACTIVE QUERIES</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="ksql_server_stats_activity_summary">
+                    <query>fields "messages-consumed-per-sec"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">REALTIME MESSAGES CONSUMED/SEC</option>
+                <option name="unit">msg/sec</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="ksql_server_stats_activity_summary">
+                    <query>fields "messages-produced-per-sec"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">REALTIME MESSAGES PRODUCED/SEC</option>
+                <option name="unit">msg/sec</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="ksql_server_stats_activity_summary">
+                    <query>fields "error-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ERROR RATE</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_ksql_server$ $ksql_server_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-confluent-ksql-server?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_ksql_server$" rejects="$ksql_server_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE KSQL-SERVER NODES DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <!--
+
+    CONFLUENT KAFKA-REST
+
+    -->
+
+    <row depends="$load_confluent_kafka_rest$">
+        <panel>
+            <html>
+                <div class="dashseparator">
+                    <div class="box">
+                      <img src="../../static/app/telegraf-kafka/icons/confluent-logo.png"/>
+                      <span style="font-size: 22px; font-weight: bold; color: #999999; margin-top: 5px;">KAFKA-REST</span>
+                    </div>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_kafka_rest$ $kafka_rest_detected$">
+        <panel>
+            <single>
+                <search depends="$kafka_rest_detected$">
+                    <query>| savedsearch telegraf-kafka-kafka-rest | search $env$ $label$ | stats count</query>
+                    <earliest>-15m</earliest>
+                    <latest>now</latest>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">KAFKA-REST NODES</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="kafka_rest_summary">
+                    <query>fields "jetty-metrics.connections-active"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">ACTIVE CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="kafka_rest_summary">
+                    <query>fields "jetty-metrics.connections-opened-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">OPENED CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="kafka_rest_summary">
+                    <query>fields "jetty-metrics.connections-closed-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">none</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x006d9c","0x006d9c"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">CLOSED CONNECTIONS REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+        <panel>
+            <single>
+                <search base="kafka_rest_summary_jersey">
+                    <query>fields "jersey-metrics.request-error-rate"</query>
+                </search>
+                <option name="colorMode">block</option>
+                <option name="drilldown">all</option>
+                <option name="numberPrecision">0.00</option>
+                <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+                <option name="rangeValues">[0]</option>
+                <option name="refresh.display">progressbar</option>
+                <option name="underLabel">HTTP ERROR RESPONSES REQ/SEC</option>
+                <option name="useColors">1</option>
+            </single>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_kafka_rest$ $kafka_rest_detected$">
+        <panel>
+            <html>
+                <div style="text-align: center;">
+                    <a target="_blank" class="btn btn-primary" href="telegraf-kafka-confluent-kafka-rest?form.env=$form.env$&amp;form.label=$form.label$" role="button"> OPEN ENTITY DASHBOARD VIEW</a>
+                </div>
+            </html>
+        </panel>
+    </row>
+
+    <row depends="$load_confluent_kafka_rest$" rejects="$kafka_rest_detected$">
+        <panel>
+            <html>
+                <div style="text-align: left; font-style: italic;">
+                    <h2 style="color: #779ecb;">NO ACTIVE KAFKA-REST NODES DETECTED</h2>
+                </div>
+            </html>
+        </panel>
+    </row>
+    
+</dashboard>

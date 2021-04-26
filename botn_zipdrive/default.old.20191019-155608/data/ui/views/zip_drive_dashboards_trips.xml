@@ -1,0 +1,278 @@
+<form theme="dark">
+  <label>vi - Trips</label>
+  <description>User Trips details</description>
+  <search>
+    <query>
+        | inputlookup append=t scooter_users.csv | where username=$username_max|s$ | table theme
+      </query>
+    <done>
+      <set token="theme_max">$result.theme$</set>
+    </done>
+  </search>
+  <search>
+    <query>
+        | inputlookup append=t scooter_users.csv | where username=$username_max|s$ | table profile_picture
+      </query>
+    <done>
+      <set token="max_rider_profile_picture">$result.profile_picture$</set>
+    </done>
+  </search>
+  <search>
+    <query>
+        | inputlookup append=t scooter_users.csv | where username=$user|s$ | table profile_picture
+      </query>
+    <done>
+      <set token="rider_profile_picture">$result.profile_picture$</set>
+    </done>
+  </search>
+  <search>
+    <query>
+        | inputlookup append=t scooter_users.csv | where username=$user|s$ | table theme
+      </query>
+    <done>
+      <set token="theme">$result.theme$</set>
+    </done>
+  </search>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="user" searchWhenChanged="true">
+      <label>Users</label>
+      <fieldForLabel>user</fieldForLabel>
+      <fieldForValue>user</fieldForValue>
+      <search>
+        <query>| inputlookup append=t scooter_users.csv | rename username as user | table user</query>
+        <earliest>0</earliest>
+        <latest></latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>LEADERBOARD</title>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Maximum # of trips</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | sort -trips | head 1 | table trips,username</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+          <done>
+            <set token="username_max">$result.username$</set>
+          </done>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">location-arrow</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme_max$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel depends="$username_max$">
+      <title>Top Rider</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | where username=$username_max|s$ | eval fullname = last_name. ", " .first_name | table fullname </query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">user</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme_max$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel depends="$username_max$">
+      <title>Top Rider Location</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | where username=$username_max|s$ | eval location = city. ", " .state | table location,username</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">globe</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme_max$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Profile</title>
+      <html>
+        <body>
+          <img src="$max_rider_profile_picture$"/>
+        </body>
+      </html>
+    </panel>
+  </row>
+  <row depends="$user$">
+    <panel>
+      <title>RIDER STATS</title>
+    </panel>
+  </row>
+  <row depends="$user$">
+    <panel>
+      <title># of trips</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | where username=$user|s$ | table trips,username</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">location-arrow</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Rider Name</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | where username=$user|s$ | eval fullname = last_name. ", " .first_name | table fullname </query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">user</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Rider Location</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| inputlookup append=t scooter_users.csv | where username=$user|s$ | eval location = city. ", " .state | table location,username</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">globe</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">$theme$</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+      </viz>
+    </panel>
+    <panel>
+      <title>Profile</title>
+      <html>
+        <body>
+          <img src="$rider_profile_picture$"/>
+        </body>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title># of riders in each state</title>
+      <chart>
+        <search>
+          <query>| inputlookup append=t scooter_users.csv
+| stats count by state</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">bar</option>
+        <option name="charting.drilldown">none</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top 5 cities in CA with most # of riders</title>
+      <chart>
+        <search>
+          <query>| inputlookup append=t scooter_users.csv 
+| where state="California"
+| stats count by city
+| sort -count
+| head 5</query>
+          <earliest>0</earliest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text"># of riders</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+</form>

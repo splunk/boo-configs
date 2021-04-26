@@ -1,0 +1,15 @@
+<panel>
+  <title>Nagios - Top 10 Warning+ Service Notifications across Hosts in Last 24 Hours</title>
+    <table>
+    <search>
+      <query>sourcetype=nagios:core eventname="SERVICE NOTIFICATION" status_code="WARNING" OR status_code="CRITICAL" | dedup service_name host_name | top service_name limit="10" | table service_name count</query>
+      <earliest>-24h@h</earliest>
+      <latest>now</latest>
+    </search>
+    <option name="wrap">false</option>
+    <option name="rowNumbers">true</option>
+    <option name="drilldown">row</option>
+    <option name="dataOverlayMode">none</option>
+    <option name="count">10</option>
+  </table>
+</panel>

@@ -1,0 +1,12 @@
+[app/install/install_source_checksum]
+version = 7.3.2
+modtime = 1571193159.370365000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23Splunk_TA_google-cloudplatform%23configs%2Fconf-google_cloud_global_settings%23proxy_settings%3Ausername%3A]
+owner = splunk-system-user
+version = 7.3.2
+modtime = 1571193168.652454000
+
+[google_cloud_global_settings/proxy_settings]
+version = 7.3.2
+modtime = 1571193168.673634000

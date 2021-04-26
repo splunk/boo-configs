@@ -1,0 +1,6 @@
+<dashboard>
+  <label>Move along - Nothing to see here</label>
+  <row>
+  <panel><html><img src="/static/app/botn_tmi/dashboard_meme.png"></img></html></panel>
+  </row>
+</dashboard>
